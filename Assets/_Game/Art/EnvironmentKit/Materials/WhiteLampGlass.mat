@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: WindowHaze
-  m_Shader: {fileID: 4800000, guid: 06873b774a8064f57bb03867fdebe5ca, type: 3}
+  m_Name: WhiteLampGlass
+  m_Shader: {fileID: 10755, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -24,9 +24,8 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats:
-    - _Intensity: 0.4
+    m_Floats: []
     m_Colors:
-    - _Color: {r: 0.8, g: 0.8627451, b: 0.8392157, a: 1}
+    - _Color: {r: 0.9490196, g: 0.95686275, b: 0.9372549, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
