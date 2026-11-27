@@ -58,9 +58,29 @@
 
 ## Договорённости
 
-Шукри записывает согласованные имена сцен, методы `GameManager`, игровые события и имена звуков. Это нужно перед подключением UI, переходов и звука к уровням.
+### Сцены и маршрут
 
-_(пока пусто)_
+| Порядок | Имя сцены | Прогресс |
+|---|---|---|
+| 0 | `Main` | меню и вступление |
+| 1 | `Cell` | `1/3 Cell` |
+| 2 | `Corridor` | `2/3 Corridor` |
+| 3 | `Kitchen` | `3/3 Kitchen` |
+
+После `Kitchen` сцена не меняется: `GameManager` переводит игру в состояние `Finished`, а UI показывает `To be continued`.
+
+### API систем
+
+- Али вызывает на `GameManager.Instance`: `StartGame()`, `CompleteIntro()`, `SkipIntro()`, `TogglePause()`, `SetPaused(bool)`, `RestartCurrentScene()`, `ReturnToMenu()`.
+- Камиль вызывает на `GameManager.Instance` метод `CompleteCurrentLevel()` после пересечения выхода и `ReportPlayerDetected()` при обнаружении героя в `Kitchen`. Перед обработкой игрового ввода проверяет `IsInputEnabled`.
+- Обе роли могут вызывать на `AudioManager.Instance` методы `Play("sound_id")`, `Stop("sound_id")` (музыка и зацикленные эффекты), `SetMusicVolume(float)`, `SetSfxVolume(float)`, `SetMuted(bool)`. Имена звуков доступны как константы `AudioIds`.
+- События `GameManager`: `StateChanged`, `ProgressChanged`, `LevelCompleted`, `PlayerDetected`, `SceneLoadStarted`, `SceneReady`.
+- Завершение уровня и обнаружение принимаются один раз до окончания перехода/рестарта. Во время `Transitioning` игровой ввод должен быть выключен.
+- Пауза задаёт `Time.timeScale = 0`; циклы повара и шефа должны использовать масштабируемое время (`Time.deltaTime`, `WaitForSeconds`).
+
+### Имена звуков
+
+`music_menu`, `music_intro`, `ambience_cell`, `ambience_corridor`, `ambience_kitchen`, `footstep`, `door`, `key_drop`, `pressure_plate`, `gate_open`, `gate_close`, `cart_wheels`, `dishes`, `detected`, `ui_click`.
 
 ## На площадке
 
