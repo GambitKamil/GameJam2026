@@ -1,0 +1,29 @@
+# Текстовые файлы — одинаковые переводы строк на Mac и Windows
+* text=auto
+
+# Файлы Unity в формате YAML — текст, всегда LF
+*.unity      text eol=lf
+*.prefab     text eol=lf
+*.asset      text eol=lf
+*.meta       text eol=lf
+*.mat        text eol=lf
+*.anim       text eol=lf
+*.controller text eol=lf
+*.cs         text eol=lf diff=csharp
+
+# Бинарные — git не пытается их сравнивать и склеивать
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.psd  binary
+*.tga  binary
+*.gif  binary
+*.wav  binary
+*.mp3  binary
+*.ogg  binary
+*.mp4  binary
+*.mov  binary
+*.fbx  binary
+*.blend binary
+*.ttf  binary
+*.otf  binary
