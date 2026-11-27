@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class BreadSupply : MonoBehaviour
@@ -12,7 +13,10 @@ public sealed class BreadSupply : MonoBehaviour
     [SerializeField, Min(0.1f)] private float throwSpeed = 8.5f;
 
     private const float FloorHeight = 0.075f;
-    private const float PreviewStep = 0.035f;
+    private const float FlightStep = 1f / 120f;
+    private const float CeilingHeight = 3.70f;
+    private const float LeftWall = -7.27f;
+    private const float RightWall = 7.08f;
     private static readonly Color NormalGuide = new Color(1f, 0.85f, 0.55f, 0.9f);
     private static readonly Color KeyGuide = new Color(0.53f, 0.94f, 0.63f, 0.95f);
 
@@ -21,6 +25,8 @@ public sealed class BreadSupply : MonoBehaviour
     private LineRenderer preview;
     private Material previewMaterial;
     private Camera levelCamera;
+    private CellMotion motion;
+    private readonly List<Vector3> guidePoints = new List<Vector3>(480);
     private bool aiming;
 
     public bool IsHoldingPiece { get; private set; }
@@ -32,6 +38,7 @@ public sealed class BreadSupply : MonoBehaviour
         remaining = pieces;
         loafScale = loaf.localScale;
         levelCamera = Camera.main;
+        motion = player.GetComponent<CellMotion>();
     }
 
     private void Update()
@@ -42,8 +49,11 @@ public sealed class BreadSupply : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.E) && IsNearTable())
-            TrySpendPiece();
+        if (motion.Busy)
+            return;
+
+        if (Input.GetKeyDown(KeyCode.E) && IsNearTable() && TrySpendPiece())
+            motion.Eat(crumbTemplate);
         if (Input.GetKeyDown(KeyCode.Q))
             TakePieceForThrow();
         if (!IsHoldingPiece)
@@ -54,12 +64,13 @@ public sealed class BreadSupply : MonoBehaviour
         if (!aiming)
             return;
 
-        Vector3 origin = player.transform.position + Vector3.up * 0.35f;
-        var plane = new Plane(Vector3.forward, origin);
+        Vector3 center = player.transform.position + Vector3.up * 0.48f;
+        var plane = new Plane(Vector3.forward, center);
         Ray ray = levelCamera.ScreenPointToRay(Input.mousePosition);
         if (plane.Raycast(ray, out float distance))
         {
-            Vector3 velocity = (ray.GetPoint(distance) - origin).normalized * throwSpeed;
+            Vector3 velocity = (ray.GetPoint(distance) - center).normalized * throwSpeed;
+            Vector3 origin = motion.ThrowOrigin(velocity);
             if (Input.GetMouseButtonUp(0))
                 Launch(origin, velocity);
             else
@@ -78,7 +89,10 @@ public sealed class BreadSupply : MonoBehaviour
     private void TakePieceForThrow()
     {
         if (!IsHoldingPiece && !ThrowInProgress && IsNearTable() && TrySpendPiece())
+        {
             IsHoldingPiece = true;
+            motion.Hold(crumbTemplate);
+        }
     }
 
     public bool TrySpendPiece()
@@ -105,27 +119,13 @@ public sealed class BreadSupply : MonoBehaviour
             preview.endWidth = 0.018f;
         }
 
+        int catchFrame = Simulate(origin, velocity, guidePoints);
         preview.enabled = true;
-        preview.positionCount = 52;
-        preview.SetPosition(0, origin);
-        Vector3 last = origin;
-        bool hitsKey = false;
-        for (int i = 1; i < preview.positionCount; i++)
-        {
-            Vector3 point = FlightPoint(origin, velocity, i * PreviewStep);
-            bool landed = point.y <= FloorHeight;
-            preview.SetPosition(i, point);
-            hitsKey = !landed && escape.HitsKey(last, point);
-            if (landed || hitsKey)
-            {
-                preview.positionCount = i + 1;
-                break;
-            }
-
-            last = point;
-        }
-
-        preview.startColor = preview.endColor = hitsKey ? KeyGuide : NormalGuide;
+        int count = catchFrame < 0 ? guidePoints.Count : catchFrame + 1;
+        preview.positionCount = count;
+        for (int i = 0; i < count; i++)
+            preview.SetPosition(i, guidePoints[i]);
+        preview.startColor = preview.endColor = catchFrame < 0 ? NormalGuide : KeyGuide;
     }
 
     private void Launch(Vector3 origin, Vector3 velocity)
@@ -133,7 +133,7 @@ public sealed class BreadSupply : MonoBehaviour
         IsHoldingPiece = false;
         ThrowInProgress = true;
         EndAim();
-        StartCoroutine(Throw(origin, velocity));
+        StartCoroutine(motion.ThrowGesture(velocity, () => StartCoroutine(Throw(origin, velocity))));
     }
 
     private IEnumerator Throw(Vector3 origin, Vector3 velocity)
@@ -141,37 +141,76 @@ public sealed class BreadSupply : MonoBehaviour
         GameObject crumb = Instantiate(crumbTemplate, origin, Quaternion.identity);
         crumb.name = "Thrown Bread";
         crumb.SetActive(true);
-        bool airborneCatch = false;
-        Vector3 last = origin;
-        for (float elapsed = 0f; ; elapsed += Time.deltaTime)
+
+        var path = new List<Vector3>(480);
+        int catchFrame = Simulate(origin, velocity, path);
+        int finalFrame = catchFrame < 0 ? path.Count - 1 : catchFrame;
+        float duration = finalFrame * FlightStep;
+        if (catchFrame >= 0)
+            escape.StartAirCatch(path[catchFrame], duration);
+
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
-            Vector3 point = FlightPoint(origin, velocity, elapsed);
-            crumb.transform.position = point;
-            if (point.y <= FloorHeight)
-                break;
-
-            if (escape.HitsKey(last, point))
-            {
-                airborneCatch = true;
-                break;
-            }
-
-            last = point;
+            if (catchFrame >= 0)
+                escape.UpdateAirCatch(elapsed);
+            float frame = elapsed / FlightStep;
+            int previous = Mathf.Min((int)frame, finalFrame - 1);
+            crumb.transform.position = Vector3.Lerp(path[previous], path[previous + 1], frame - previous);
+            crumb.transform.Rotate(0f, 0f, -velocity.x * Time.deltaTime * 24f);
             yield return null;
         }
 
-        yield return escape.ReactToBread(crumb.transform, airborneCatch);
+        if (catchFrame >= 0)
+            escape.UpdateAirCatch(duration);
+        crumb.transform.position = path[finalFrame];
+        yield return escape.ReactToBread(crumb.transform, catchFrame >= 0);
         if (crumb != null)
             Destroy(crumb);
         ThrowInProgress = false;
     }
 
-    private static Vector3 FlightPoint(Vector3 origin, Vector3 velocity, float time)
+    private int Simulate(Vector3 position, Vector3 velocity, List<Vector3> path)
     {
-        Vector3 point = origin + velocity * time + Physics.gravity * (0.5f * time * time);
-        point.x = Mathf.Clamp(point.x, -7.1f, 7f);
-        point.y = Mathf.Max(point.y, FloorHeight);
-        return point;
+        path.Clear();
+        path.Add(position);
+        int catchFrame = -1;
+        for (int i = 1; i < 480; i++)
+        {
+            Vector3 previous = position;
+            velocity += Physics.gravity * FlightStep;
+            position += velocity * FlightStep;
+
+            if (position.x < LeftWall)
+                Bounce(ref position.x, ref velocity.x, LeftWall, 0.62f);
+            else if (position.x > RightWall)
+                Bounce(ref position.x, ref velocity.x, RightWall, 0.62f);
+            if (position.y > CeilingHeight)
+                Bounce(ref position.y, ref velocity.y, CeilingHeight, 0.58f);
+
+            bool settled = false;
+            if (position.y <= FloorHeight)
+            {
+                Bounce(ref position.y, ref velocity.y, FloorHeight, 0.47f);
+                velocity.x *= 0.68f;
+                settled = velocity.y < 0.64f;
+                if (settled)
+                    position.y = FloorHeight;
+            }
+
+            path.Add(position);
+            if (catchFrame < 0 && position.y > 0.55f && escape.HitsKey(previous, position))
+                catchFrame = i;
+            if (settled || catchFrame >= 0)
+                break;
+        }
+
+        return catchFrame;
+    }
+
+    private static void Bounce(ref float position, ref float velocity, float surface, float restitution)
+    {
+        position = surface - (position - surface) * restitution;
+        velocity *= -restitution;
     }
 
     private void EndAim()

@@ -6,6 +6,7 @@ public sealed class SideViewPlayer : MonoBehaviour
     [SerializeField] private float walkSpeed = 3.5f;
 
     private Rigidbody body;
+    private CellMotion cellMotion;
     private float moveInput;
 
     internal static bool CanReadInput
@@ -20,6 +21,7 @@ public sealed class SideViewPlayer : MonoBehaviour
     private void Awake()
     {
         body = GetComponent<Rigidbody>();
+        cellMotion = GetComponent<CellMotion>();
         body.constraints |= RigidbodyConstraints.FreezePositionZ
             | RigidbodyConstraints.FreezeRotation;
     }
@@ -32,7 +34,7 @@ public sealed class SideViewPlayer : MonoBehaviour
     private void FixedUpdate()
     {
         Vector3 velocity = body.linearVelocity;
-        velocity.x = CanReadInput ? moveInput * walkSpeed : 0f;
+        velocity.x = CanReadInput && (cellMotion == null || !cellMotion.Busy) ? moveInput * walkSpeed : 0f;
         body.linearVelocity = velocity;
     }
 }
