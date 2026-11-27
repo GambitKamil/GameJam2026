@@ -10,6 +10,7 @@
 
 ## Gameplay, levels & story
 
+- Cell prototype logic, layout, and English prompts — Codex (OpenAI) — https://openai.com/codex/ — AI-assisted, created for this project — `Assets/_Game/Scripts/Gameplay/`, `Assets/_Game/Scenes/Levels/Cell.unity`
 
 
 ## Systems, audio & build

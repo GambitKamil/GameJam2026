@@ -8,6 +8,15 @@ public sealed class SideViewPlayer : MonoBehaviour
     private Rigidbody body;
     private float moveInput;
 
+    internal static bool CanReadInput
+    {
+        get
+        {
+            var game = GameManager.Instance;
+            return Time.timeScale > 0f && (game == null || game.IsInputEnabled);
+        }
+    }
+
     private void Awake()
     {
         body = GetComponent<Rigidbody>();
@@ -17,13 +26,13 @@ public sealed class SideViewPlayer : MonoBehaviour
 
     private void Update()
     {
-        moveInput = Input.GetAxisRaw("Horizontal");
+        moveInput = CanReadInput ? Input.GetAxisRaw("Horizontal") : 0f;
     }
 
     private void FixedUpdate()
     {
         Vector3 velocity = body.linearVelocity;
-        velocity.x = moveInput * walkSpeed;
+        velocity.x = CanReadInput ? moveInput * walkSpeed : 0f;
         body.linearVelocity = velocity;
     }
 }
