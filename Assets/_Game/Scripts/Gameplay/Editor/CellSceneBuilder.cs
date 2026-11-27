@@ -182,7 +182,7 @@ public static class CellSceneBuilder
     {
         var root = Node("Player", new Vector3(-5.71f, 0.91f, 0f));
         var body = root.gameObject.AddComponent<Rigidbody>();
-        body.interpolate = RigidbodyInterpolation.Interpolate;
+        body.interpolation = RigidbodyInterpolation.Interpolate;
         var collider = root.gameObject.AddComponent<CapsuleCollider>();
         collider.height = 1.8f;
         collider.radius = 0.33f;
