@@ -226,6 +226,7 @@ GameObject:
   m_Component:
   - component: {fileID: 782625831}
   - component: {fileID: 782625832}
+  - component: {fileID: 782625833}
   m_Layer: 0
   m_Name: Game Manager
   m_TagString: Untagged
@@ -265,6 +266,19 @@ MonoBehaviour:
   - Corridor
   - Kitchen
   sceneTransitionDelay: 0.2
+--- !u!114 &782625833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 782625830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4098369b8dad445ca24bf0176f04b01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RouteOverlay
+  showTemporaryInterface: 1
 --- !u!1 &1907796323
 GameObject:
   m_ObjectHideFlags: 0

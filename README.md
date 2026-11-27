@@ -74,8 +74,9 @@
 - Али вызывает на `GameManager.Instance`: `StartGame()`, `CompleteIntro()`, `SkipIntro()`, `TogglePause()`, `SetPaused(bool)`, `RestartCurrentScene()`, `ReturnToMenu()`.
 - Камиль вызывает на `GameManager.Instance` метод `CompleteCurrentLevel()` после пересечения выхода и `ReportPlayerDetected()` при обнаружении героя в `Kitchen`. Перед обработкой игрового ввода проверяет `IsInputEnabled`.
 - Обе роли могут вызывать на `AudioManager.Instance` методы `Play("sound_id")`, `Stop("sound_id")` (музыка и зацикленные эффекты), `SetMusicVolume(float)`, `SetSfxVolume(float)`, `SetMuted(bool)`. Имена звуков доступны как константы `AudioIds`.
-- События `GameManager`: `StateChanged`, `ProgressChanged`, `LevelCompleted`, `PlayerDetected`, `SceneLoadStarted`, `SceneReady`.
-- Завершение уровня и обнаружение принимаются один раз до окончания перехода/рестарта. Во время `Transitioning` игровой ввод должен быть выключен.
+- События `GameManager`: `StateChanged`, `ProgressChanged`, `LevelCompleted`, `PlayerDetected`, `SceneLoadStarted`, `SceneReady`, `FadeChanged`. `SceneReady` означает, что новая сцена загружена. Управление возвращается при переходе в `Playing`.
+- Если на входе есть анимация, Камиль добавляет `LevelEntrance` на активный объект сцены и вызывает `CompleteEntrance()` событием в конце анимации. Без компонента ввод возвращается после затемнения. Завершение уровня и обнаружение принимаются один раз за переход.
+- Шукри добавляет готовые `Cell`, `Corridor` и `Kitchen` в Build Settings. При подключении UI Али отключает `Show Temporary Interface` у `RouteOverlay` в `Main`. Затемнение продолжает работать отдельно.
 - Пауза задаёт `Time.timeScale = 0`; циклы повара и шефа должны использовать масштабируемое время (`Time.deltaTime`, `WaitForSeconds`).
 
 ### Имена звуков

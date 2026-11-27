@@ -28,6 +28,7 @@ public sealed class GameManager : MonoBehaviour
     public event Action<string> PlayerDetected;
     public event Action<string> SceneLoadStarted;
     public event Action<string> SceneReady;
+    public event Action<float> FadeChanged;
 
     [SerializeField]
     private string[] levelSceneNames = { CellScene, CorridorScene, KitchenScene };
@@ -39,6 +40,8 @@ public sealed class GameManager : MonoBehaviour
     public int CurrentLevelIndex { get; private set; } = -1;
     public int LevelCount => levelSceneNames.Length;
     public bool IsInputEnabled => State == GameState.Playing;
+    public bool IsRouteAvailable => LevelCount > 0 && Array.TrueForAll(levelSceneNames, IsSceneAvailable);
+    public float FadeOpacity { get; private set; }
 
     private bool sceneChangeRequested;
 
@@ -52,8 +55,6 @@ public sealed class GameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        SceneManager.sceneLoaded += HandleSceneLoaded;
-        SyncWithActiveScene(SceneManager.GetActiveScene());
     }
 
     private void OnDestroy()
@@ -63,7 +64,6 @@ public sealed class GameManager : MonoBehaviour
             return;
         }
 
-        SceneManager.sceneLoaded -= HandleSceneLoaded;
         Time.timeScale = 1f;
         Instance = null;
     }
@@ -99,14 +99,16 @@ public sealed class GameManager : MonoBehaviour
 
     public void CompleteIntro()
     {
-        if (State == GameState.Intro && !sceneChangeRequested && LevelCount > 0)
+        if (State != GameState.Intro || sceneChangeRequested || LevelCount == 0)
         {
-            string firstScene = levelSceneNames[0];
-            if (CanLoadScene(firstScene))
-            {
-                sceneChangeRequested = true;
-                StartCoroutine(LoadSceneAfterDelay(firstScene));
-            }
+            return;
+        }
+
+        string firstScene = levelSceneNames[0];
+        if (CanLoadScene(firstScene))
+        {
+            sceneChangeRequested = true;
+            StartCoroutine(LoadScene(firstScene));
         }
     }
 
@@ -134,13 +136,11 @@ public sealed class GameManager : MonoBehaviour
 
         if (!hasNextLevel)
         {
-            Time.timeScale = 0f;
-            SetState(GameState.Finished);
-            sceneChangeRequested = false;
+            StartCoroutine(FinishRoute());
             return;
         }
 
-        StartCoroutine(LoadSceneAfterDelay(levelSceneNames[nextLevelIndex]));
+        StartCoroutine(LoadScene(levelSceneNames[nextLevelIndex]));
     }
 
     public void ReportPlayerDetected()
@@ -153,7 +153,7 @@ public sealed class GameManager : MonoBehaviour
 
         sceneChangeRequested = true;
         PlayerDetected?.Invoke(SceneManager.GetActiveScene().name);
-        StartCoroutine(LoadSceneAfterDelay(KitchenScene));
+        StartCoroutine(LoadScene(KitchenScene));
     }
 
     public void RestartCurrentScene()
@@ -164,7 +164,7 @@ public sealed class GameManager : MonoBehaviour
         }
 
         sceneChangeRequested = true;
-        StartCoroutine(LoadSceneAfterDelay(SceneManager.GetActiveScene().name));
+        StartCoroutine(LoadScene(SceneManager.GetActiveScene().name));
     }
 
     public void TogglePause()
@@ -197,12 +197,15 @@ public sealed class GameManager : MonoBehaviour
         }
 
         sceneChangeRequested = true;
-        StartCoroutine(LoadSceneAfterDelay(MainScene));
+        StartCoroutine(LoadScene(MainScene));
     }
+
+    private static bool IsSceneAvailable(string sceneName) =>
+        !string.IsNullOrEmpty(sceneName) && Application.CanStreamedLevelBeLoaded(sceneName);
 
     private bool CanLoadScene(string sceneName)
     {
-        if (!string.IsNullOrEmpty(sceneName) && Application.CanStreamedLevelBeLoaded(sceneName))
+        if (IsSceneAvailable(sceneName))
         {
             return true;
         }
@@ -211,47 +214,63 @@ public sealed class GameManager : MonoBehaviour
         return false;
     }
 
-    private IEnumerator LoadSceneAfterDelay(string sceneName)
+    private IEnumerator LoadScene(string sceneName)
     {
         SetState(GameState.Transitioning);
         SceneLoadStarted?.Invoke(sceneName);
+        yield return FadeTo(1f);
+        yield return SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
 
-        if (sceneTransitionDelay > 0f)
+        Time.timeScale = 1f;
+        Scene scene = SceneManager.GetActiveScene();
+        CurrentLevelIndex = Array.IndexOf(levelSceneNames, scene.name);
+        LevelEntrance entrance = null;
+        if (CurrentLevelIndex >= 0)
         {
-            yield return new WaitForSecondsRealtime(sceneTransitionDelay);
+            ProgressChanged?.Invoke(CurrentLevelIndex + 1, LevelCount, scene.name);
+            entrance = LevelEntrance.FindIn(scene);
         }
 
-        SceneManager.LoadScene(sceneName);
-    }
+        SceneReady?.Invoke(scene.name);
+        yield return FadeTo(0f);
 
-    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (mode != LoadSceneMode.Single)
+        if (entrance != null)
         {
-            return;
+            yield return entrance.WaitForCompletion();
         }
 
         sceneChangeRequested = false;
-        SyncWithActiveScene(scene);
-        SceneReady?.Invoke(scene.name);
+        SetState(CurrentLevelIndex >= 0 ? GameState.Playing : GameState.Menu);
     }
 
-    private void SyncWithActiveScene(Scene scene)
+    private IEnumerator FinishRoute()
     {
-        Time.timeScale = 1f;
-        CurrentLevelIndex = Array.IndexOf(levelSceneNames, scene.name);
+        SetState(GameState.Transitioning);
+        yield return FadeTo(1f);
+        Time.timeScale = 0f;
+        SetState(GameState.Finished);
+        yield return FadeTo(0f);
+        sceneChangeRequested = false;
+    }
 
-        if (scene.name == MainScene)
+    private IEnumerator FadeTo(float target)
+    {
+        float from = FadeOpacity;
+        float elapsed = 0f;
+        while (elapsed < sceneTransitionDelay)
         {
-            SetState(GameState.Menu);
-            return;
+            SetFade(Mathf.Lerp(from, target, elapsed / sceneTransitionDelay));
+            yield return null;
+            elapsed += Time.unscaledDeltaTime;
         }
 
-        if (CurrentLevelIndex >= 0)
-        {
-            SetState(GameState.Playing);
-            ProgressChanged?.Invoke(CurrentLevelIndex + 1, levelSceneNames.Length, scene.name);
-        }
+        SetFade(target);
+    }
+
+    private void SetFade(float opacity)
+    {
+        FadeOpacity = opacity;
+        FadeChanged?.Invoke(opacity);
     }
 
     private void SetState(GameState newState)
