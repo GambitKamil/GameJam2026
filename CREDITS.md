@@ -6,7 +6,7 @@
 
 ## Design & UI
 
-
+- Cell style frame, modular environment kit, and procedural surfaces and lighting — Codex (OpenAI) — https://openai.com/codex/ — created for this project with Unity primitives and shaders — `Assets/_Game/Art/EnvironmentKit/`, `Assets/_Game/Scenes/Sandbox/Ali.unity`
 
 ## Gameplay, levels & story
 
