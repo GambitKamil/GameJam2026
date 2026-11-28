@@ -19,6 +19,7 @@ public sealed class GameManager : MonoBehaviour
     public const string CellScene = "Cell";
     public const string CorridorScene = "Corridor";
     public const string KitchenScene = "Kitchen";
+    public const string KitchenVentilationScene = "Kitchen_Ventilation";
 
     public static GameManager Instance { get; private set; }
 
@@ -31,7 +32,7 @@ public sealed class GameManager : MonoBehaviour
     public event Action<float> FadeChanged;
 
     [SerializeField]
-    private string[] levelSceneNames = { CellScene, CorridorScene, KitchenScene };
+    private string[] levelSceneNames = { CellScene, CorridorScene, KitchenScene, KitchenVentilationScene };
 
     [SerializeField, Min(0f)]
     private float sceneTransitionDelay = 0.2f;

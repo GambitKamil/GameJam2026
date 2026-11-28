@@ -265,6 +265,7 @@ MonoBehaviour:
   - Cell
   - Corridor
   - Kitchen
+  - Kitchen_Ventilation
   sceneTransitionDelay: 0.2
 --- !u!114 &782625833
 MonoBehaviour:

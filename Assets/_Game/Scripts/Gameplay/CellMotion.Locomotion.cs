@@ -25,6 +25,19 @@ public sealed partial class CellMotion
 
     internal void SetFloorRodActive(bool active) => floorRodActive = active;
 
+    // After a teleport (checkpoint respawn, climbing out of a cart) the planted feet would keep
+    // pulling the figure back to the old spot; plant them again under the body.
+    internal void ResetFooting()
+    {
+        swingingFoot = null;
+        hasLocomotionSample = false;
+        motionVelocity = 0f;
+        figure.localPosition = rest;
+        nearFootContact.Plant(this, figure.TransformPoint(frontLeg.BootHome), figure.rotation);
+        farFootContact.Plant(this, figure.TransformPoint(backLeg.BootHome), figure.rotation);
+        hasFootContacts = true;
+    }
+
     private void InitializeLocomotion()
     {
         nearFootContact = new FootContact(frontLeg, nearBoot);

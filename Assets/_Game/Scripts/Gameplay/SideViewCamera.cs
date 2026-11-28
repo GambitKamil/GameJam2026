@@ -12,6 +12,10 @@ public sealed class SideViewCamera : MonoBehaviour
     [SerializeField, Min(0f)] private float lookAhead;
     [SerializeField, Min(0.01f)] private float lookAheadTurnTime = 0.08f;
 
+    [Tooltip("Also follow the target vertically (lifts, ramps). Off keeps the original fixed height.")]
+    [SerializeField] private bool followHeight;
+    [SerializeField, Min(0.01f)] private float heightSmoothTime = 0.45f;
+
     [SerializeField] private Transform framingSubject;
     [SerializeField, Range(0f, 1f)] private float depthFollow;
 
@@ -26,11 +30,16 @@ public sealed class SideViewCamera : MonoBehaviour
     private Rigidbody targetBody;
     private float baseDepth;
     private float depthVelocity;
+    private float heightOffset;
+    private float heightVelocity;
 
     private void Awake()
     {
         if (target != null)
+        {
             targetBody = target.GetComponent<Rigidbody>();
+            heightOffset = transform.position.y - target.position.y;
+        }
         view = GetComponent<Camera>();
         baseDepth = transform.position.z;
         if (view == null)
@@ -72,6 +81,9 @@ public sealed class SideViewCamera : MonoBehaviour
         Vector3 position = transform.position;
         position.x = Mathf.SmoothDamp(
             position.x, targetX, ref horizontalVelocity, smoothTime);
+        if (followHeight)
+            position.y = Mathf.SmoothDamp(position.y, target.position.y + heightOffset,
+                ref heightVelocity, heightSmoothTime);
         if (depthFollow > 0f)
             position.z = Mathf.SmoothDamp(position.z, baseDepth + target.position.z * depthFollow,
                 ref depthVelocity, smoothTime);
