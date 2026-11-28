@@ -6,6 +6,8 @@
 
 ## Design & UI
 
+- Tiny Treats: Baked Goods (loaf and slice) — Isa Lousberg / Tiny Treats — https://tinytreats.itch.io/baked-goods — CC0 1.0 — rescaled and tinted for the Cell ration; `Assets/_Game/Art/CellDressing/Itch/`
+- 3D Retro Plumbing, Wiring & Machinery (pipe, valve, and circuit breaker) — chilly_durango — https://chilly-durango.itch.io/3d-retro-plumbing-wiring — CC0 1.0 — converted to FBX, rescaled and tinted for the Cell wall; `Assets/_Game/Art/CellDressing/Itch/`
 - Cell style frame, modular environment kit, and procedural surfaces and lighting — Codex (OpenAI) — https://openai.com/codex/ — created for this project with Unity primitives and shaders — `Assets/_Game/Art/EnvironmentKit/`, `Assets/_Game/Scenes/Sandbox/Ali.unity`
 - Cell character and environment polish, rounded meshes, and procedural canvas texture — Codex (OpenAI) — https://openai.com/codex/ — created for this project in Unity — `Assets/_Game/Art/EnvironmentKit/`
 - Rat model and color palette — Overaction Game Studio — https://overactiongames.itch.io/free-cartoon-low-poly-rat-pack — CC0 1.0 — gray variant adapted to the Cell mouse's head and tail animation
