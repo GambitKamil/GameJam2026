@@ -46,6 +46,9 @@ public sealed class CellEscape : MonoBehaviour
     private float nextWander;
     private bool rodInUse;
     private bool liftingRod;
+    private Vector3 hookHandHome;
+    private Vector3 hookTipHome;
+    private float hookReach;
 
     private void Awake()
     {
@@ -410,6 +413,7 @@ public sealed class CellEscape : MonoBehaviour
         yield return motion.Reach(-25f, 34f, 0.25f);
         yield return Move(key, motion.HandPosition, 0.26f, 0.10f);
         key.gameObject.SetActive(false);
+        motion.Face(gate.position.x - player.transform.position.x);
         motion.PlayLibraryGesture(CellAnimationLibrary.Motion.Interact, 0.64f);
         yield return motion.Reach(54f, 0f, 0.22f);
         for (float elapsed = 0f; elapsed < 0.22f; elapsed += Time.deltaTime)
@@ -431,11 +435,14 @@ public sealed class CellEscape : MonoBehaviour
         rodInUse = true;
         motion.Face(1f);
         motion.PlayLibraryGesture(CellAnimationLibrary.Motion.Push, 1.6f);
-        yield return motion.Reach(35f, 25f, 0.23f);
+        yield return motion.Reach(32f, 36f, 0.31f);
         Vector3 grip = motion.HandPosition;
         Vector3 keyOnFloor = key.position;
         Vector3 direction = (keyOnFloor - grip).normalized;
         Vector3 stowed = grip + direction * 0.44f;
+        hookHandHome = grip;
+        hookTipHome = stowed;
+        hookReach = Vector3.Distance(stowed, keyOnFloor);
         yield return TurnRodToward(stowed, direction);
         yield return SlideHook(stowed, keyOnFloor + Vector3.up * 0.17f, direction, 0.40f);
         yield return SlideHook(keyOnFloor + Vector3.up * 0.17f, keyOnFloor, direction, 0.19f);
@@ -456,6 +463,7 @@ public sealed class CellEscape : MonoBehaviour
 
         key.SetPositionAndRotation(retrieved, keyRest);
         PlaceHook(retrieved, direction);
+        motion.SetHandTarget(Vector3.zero, 0f);
         yield return DiscardRod();
         rodInUse = false;
         stage = Stage.KeyWithinReach;
@@ -470,7 +478,7 @@ public sealed class CellEscape : MonoBehaviour
         PlaceHook(tip, direction);
         Vector3 target = rod.position;
         Quaternion targetRotation = rod.rotation;
-        yield return BlendRod(start, startRotation, target, targetRotation, 0.27f);
+        yield return BlendRod(start, startRotation, target, targetRotation, 0.27f, true);
     }
 
     private IEnumerator DiscardRod()
@@ -496,12 +504,14 @@ public sealed class CellEscape : MonoBehaviour
         yield return new WaitForSeconds(0.30f);
     }
 
-    private IEnumerator BlendRod(Vector3 start, Quaternion from, Vector3 end, Quaternion to, float duration)
+    private IEnumerator BlendRod(Vector3 start, Quaternion from, Vector3 end, Quaternion to, float duration, bool holdingHook = false)
     {
         for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
             float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
             rod.SetPositionAndRotation(Vector3.Lerp(start, end, t), Quaternion.Slerp(from, to, t));
+            if (holdingHook)
+                TrackHookHand(hookTipHome);
             yield return null;
         }
 
@@ -524,6 +534,16 @@ public sealed class CellEscape : MonoBehaviour
     {
         rod.rotation = Quaternion.FromToRotation(Vector3.right, direction);
         rod.position = tip - rod.TransformVector(new Vector3(0.40f, 0.11f, 0f));
+        TrackHookHand(tip);
+    }
+
+    private void TrackHookHand(Vector3 tip)
+    {
+        Vector3 axis = rod.right;
+        float extension = Mathf.Clamp01(Vector3.Dot(tip - hookTipHome, axis) / Mathf.Max(hookReach, 0.01f));
+        Vector3 reach = hookHandHome + axis * (extension * 0.60f);
+        float grip = Mathf.Clamp(rod.InverseTransformPoint(reach).x, -0.39f, 0.29f);
+        motion.SetHandTarget(rod.TransformPoint(new Vector3(grip, 0f, 0f)), 1f);
     }
 
     private Vector3 GateContact()
