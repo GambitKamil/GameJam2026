@@ -61,6 +61,7 @@ public sealed class CellEscape : MonoBehaviour
         gateLock = gate.Find("Lock Plate");
         mouseHome = mouse.position;
         motion = player.GetComponent<CellMotion>();
+        followCamera?.ConfigureCellOpening(motion, gate);
         motion.SetGateBlocker(gate.GetComponent<BoxCollider>());
         mouseMotion = new CellMouseMotion(mouse, mouseStrideLength, mouseStepHeight, mouseTurnTime, mouseTailResponse);
         nextWander = Time.time + Random.Range(0.45f, 1.2f);
@@ -578,6 +579,8 @@ public sealed class CellEscape : MonoBehaviour
         door.rotation = open;
         blocker.enabled = false;
         stage = next;
+        if (door == gate)
+            followCamera?.RevealBehindGate();
         moving = false;
     }
 
