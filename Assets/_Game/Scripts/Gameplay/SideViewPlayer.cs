@@ -8,6 +8,7 @@ public sealed class SideViewPlayer : MonoBehaviour
     private Rigidbody body;
     private CellMotion cellMotion;
     private float moveInput;
+    public bool Crouching { get; private set; }
 
     internal static bool CanReadInput
     {
@@ -28,13 +29,23 @@ public sealed class SideViewPlayer : MonoBehaviour
 
     private void Update()
     {
-        moveInput = CanReadInput ? Input.GetAxisRaw("Horizontal") : 0f;
+        bool canRead = CanReadInput;
+        moveInput = canRead ? Input.GetAxisRaw("Horizontal") : 0f;
+        Crouching = cellMotion != null && canRead && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
     }
 
     private void FixedUpdate()
     {
         Vector3 velocity = body.linearVelocity;
-        velocity.x = CanReadInput && (cellMotion == null || !cellMotion.Busy) ? moveInput * walkSpeed : 0f;
+        bool movingAllowed = CanReadInput && (cellMotion == null || !cellMotion.Busy);
+        float target = movingAllowed ? moveInput * walkSpeed * (Crouching ? 0.44f : 1f) : 0f;
+        if (cellMotion == null || !movingAllowed)
+            velocity.x = target;
+        else
+        {
+            bool braking = Mathf.Abs(target) < 0.01f || velocity.x * target < 0f;
+            velocity.x = Mathf.MoveTowards(velocity.x, target, (braking ? 24f : 15f) * Time.fixedDeltaTime);
+        }
         body.linearVelocity = velocity;
     }
 }

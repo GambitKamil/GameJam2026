@@ -457,19 +457,22 @@ public sealed class CellEscape : MonoBehaviour
         haveRod = false;
         motion.SetCarryingRod(false);
         StartCoroutine(motion.Reach(-22f, 4f, 0.30f));
-        Vector3 release = rod.position;
-        Quaternion pose = rod.rotation;
-        Vector3 drop = new Vector3(gate.position.x - 2.20f, 0.055f, -0.36f);
-        Quaternion resting = Quaternion.Euler(0f, 47f, 0f);
-        for (float elapsed = 0f; elapsed < 0.55f; elapsed += Time.deltaTime)
-        {
-            float t = elapsed / 0.55f;
-            Vector3 position = Vector3.Lerp(release, drop, t) + Vector3.up * (0.28f * 4f * t * (1f - t));
-            rod.SetPositionAndRotation(position, Quaternion.Slerp(pose, resting, t));
-            yield return null;
-        }
+        Vector3 release = new Vector3(gate.position.x - 1.65f, 0.53f, -0.44f);
+        Quaternion rotation = Quaternion.Euler(0f, 40f, 11f);
+        yield return BlendRod(rod.position, rod.rotation, release, rotation, 0.23f);
 
-        rod.SetPositionAndRotation(drop, resting);
+        var shaft = rod.gameObject.AddComponent<BoxCollider>();
+        shaft.size = new Vector3(0.81f, 0.05f, 0.075f);
+        var rodBody = rod.gameObject.AddComponent<Rigidbody>();
+        rodBody.mass = 0.85f;
+        rodBody.linearDamping = 0.55f;
+        rodBody.angularDamping = 1.7f;
+        rodBody.interpolation = RigidbodyInterpolation.Interpolate;
+        rodBody.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        Physics.IgnoreCollision(shaft, player.GetComponent<Collider>());
+        rodBody.linearVelocity = new Vector3(-0.86f, 0.15f, -0.16f);
+        rodBody.angularVelocity = new Vector3(0.35f, 0.7f, -1.5f);
+        yield return new WaitForSeconds(0.30f);
     }
 
     private IEnumerator BlendRod(Vector3 start, Quaternion from, Vector3 end, Quaternion to, float duration)
@@ -577,7 +580,7 @@ public sealed class CellEscape : MonoBehaviour
         else if (!moving && stage == Stage.KeyBehindGate && Near(gate, 1f))
             prompt = haveRod ? "E - Hook the key" : "The rod is under the bunk.";
         else if (!haveRod && stage <= Stage.KeyBehindGate && Near(rod, 0.75f))
-            prompt = "E - Take the rod";
+            prompt = "E - Take the rod    Hold Ctrl - Crouch";
         else if (bread != null && bread.IsHoldingPiece)
             prompt = "Hold left mouse to aim. Release to throw.";
         else if (bread != null && bread.IsNearTable() && stage == Stage.FindBread)
@@ -585,7 +588,7 @@ public sealed class CellEscape : MonoBehaviour
         else if (bread != null && !bread.HasBread && !bread.ThrowInProgress && stage == Stage.FindBread)
             prompt = "No bread left.  R - Restart";
         else if (stage == Stage.FindBread && Near(gate, 1f))
-            prompt = "Locked. Try throwing bread near the key.";
+            prompt = "Locked. Aim at the key until the arc turns green.";
 
         if (prompt != null)
             GUI.Box(new Rect((Screen.width - 380) * 0.5f, Screen.height - 70, 380, 30), prompt);
