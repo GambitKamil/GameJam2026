@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -8,6 +9,12 @@ internal static partial class CellPolishVerification
     private static Camera stepCamera;
     private static Renderer[] rodMeshes;
     private static Renderer[] boots;
+    private static Renderer[] keyWallMeshes;
+    private static Renderer[] lowerLegMeshes;
+    private static float walkingRodOverlap, keyWallOverlap;
+    private static string walkingRodPeak, keyWallPeak;
+    private static int walkingRodSamples, keyWallSamples;
+    private static bool strictSurfaceClearance;
     private static Vector3 initialRodPosition, initialRodScale;
     private static Quaternion initialRodRotation;
     private static float stepOverlap, stepTime, openTime, closedLeft, closedRight, openLeft, openRight;
@@ -31,6 +38,22 @@ internal static partial class CellPolishVerification
     {
         rodMeshes = rod.GetComponentsInChildren<Renderer>();
         boots = new[] { nearBoot.GetComponent<Renderer>(), farBoot.GetComponent<Renderer>() };
+        lowerLegMeshes = boots.Concat(new[]
+        {
+            Field<Transform>(Field<object>(motion, "frontLeg"), "shin").GetComponent<Renderer>(),
+            Field<Transform>(Field<object>(motion, "backLeg"), "shin").GetComponent<Renderer>()
+        }).ToArray();
+        Vector3 keyStart = key.position;
+        var kit = key.root.Find("Environment Kit");
+        keyWallMeshes = kit == null ? Array.Empty<Renderer>() : kit.GetComponentsInChildren<Renderer>()
+            .Where(part => part.bounds.max.x >= keyStart.x - 0.5f && part.bounds.min.x <= keyStart.x + 0.5f &&
+                part.bounds.min.z > keyStart.z && part.bounds.min.z < keyStart.z + 0.65f && part.bounds.max.y > 0.04f)
+            .ToArray();
+        Record($"Key drop wall: {keyWallMeshes.Length} mesh bounds, nearest face Z={keyWallMeshes.Select(mesh => mesh.bounds.min.z).DefaultIfEmpty(float.NaN).Min():F4}.");
+        strictSurfaceClearance = File.Exists(Path.Combine(output, "surface-strict.txt"));
+        walkingRodOverlap = keyWallOverlap = 0f;
+        walkingRodSamples = keyWallSamples = 0;
+        walkingRodPeak = keyWallPeak = "none";
         initialRodPosition = rod.position;
         initialRodRotation = rod.rotation;
         initialRodScale = rod.lossyScale;
@@ -136,6 +159,8 @@ internal static partial class CellPolishVerification
                 CaptureStep("Step-reference");
         }
 
+        SampleSurfaceClearance();
+
         camClipsWorld |= Physics.CheckSphere(view.transform.position, view.nearClipPlane, ~0, QueryTriggerInteraction.Ignore);
 
         if (phase == 7 && Stage() == "KeyWithinReach" && motion.Busy)
@@ -159,6 +184,39 @@ internal static partial class CellPolishVerification
                 previousRightStep = delta;
             }
             previousRight = right;
+        }
+    }
+
+    private static void SampleSurfaceClearance()
+    {
+        if (key.gameObject.activeInHierarchy && key.parent == null && Stage() == "MouseJumping")
+        {
+            keyWallSamples++;
+            foreach (Renderer part in keyRenderers)
+            foreach (Renderer wall in keyWallMeshes)
+            {
+                float overlap = part.bounds.Intersects(wall.bounds) ? ShapeOverlap(part, wall) : 0f;
+                if (overlap > keyWallOverlap)
+                {
+                    keyWallOverlap = overlap;
+                    keyWallPeak = $"{part.name} / {wall.name}, t={Time.time - began:F3}s, key={key.position:F4}";
+                }
+            }
+        }
+
+        if (motion.WakingUp || motion.Busy || Field<bool>(escape, "haveRod") || Field<bool>(escape, "rodInUse"))
+            return;
+
+        walkingRodSamples++;
+        foreach (Renderer leg in lowerLegMeshes)
+        foreach (Renderer shaft in rodMeshes)
+        {
+            float overlap = leg.bounds.Intersects(shaft.bounds) ? ShapeOverlap(leg, shaft) : 0f;
+            if (overlap > walkingRodOverlap)
+            {
+                walkingRodOverlap = overlap;
+                walkingRodPeak = $"{leg.name} / {shaft.name}, t={Time.time - began:F3}s, phase={phase}, actor={player.transform.position:F4}, rod={rod.position:F4}";
+            }
         }
     }
 
@@ -280,11 +338,23 @@ internal static partial class CellPolishVerification
         if (strictComposition)
         {
             if (!moveDuringReveal)
-                Metric(percent >= 10f && percent <= 15f, $"Gate revealed {percent:F2}% of the closed width to the right.");
+                Metric(Mathf.Abs(percent) <= 0.25f, $"Opening the gate retained the original camera framing ({percent:F2}% edge change).");
             Metric(revealFirstFrameStep <= extent * 0.02f && !camClipsWorld,
                 "Gate reveal began smoothly and camera remained clear of colliders.");
             Metric(stepOverlap <= 0.0001f && rodMotion <= 0.0001f && rodRotationMotion <= 0.01f && rodScaleMotion <= 0.0001f,
                 "Bed-exit boots cleared the unchanged rod.");
+        }
+        string walls = $"Key drop vs wall: {keyWallOverlap:F5} m, {keyWallSamples} samples ({keyWallPeak}).";
+        string walking = $"Walking legs vs rod: {walkingRodOverlap:F5} m, {walkingRodSamples} samples ({walkingRodPeak}).";
+        if (strictSurfaceClearance)
+        {
+            Metric(keyWallSamples > 0 && keyWallMeshes.Length > 0 && keyWallOverlap <= 0.0001f, walls);
+            Metric(walkingRodSamples > 0 && walkingRodOverlap <= 0.0001f, walking);
+        }
+        else
+        {
+            Record(walls);
+            Record(walking);
         }
         double ms = wallFrames > 0 ? wallSeconds * 1000.0 / wallFrames : 0.0;
         Record($"Frame wall time: {ms:F3} ms mean, {1000.0 / ms:F2} FPS, {wallFrames} uncapped editor frames, excluding direct capture frames.");

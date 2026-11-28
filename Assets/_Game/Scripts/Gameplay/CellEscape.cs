@@ -372,6 +372,7 @@ public sealed class CellEscape : MonoBehaviour
 
         motion.SetHandTarget(grip, 1f);
         yield return null;
+        motion.SetFloorRodActive(false);
         liftingRod = true;
         Quaternion floorRotation = rod.rotation;
         float facing = motion.Facing;
@@ -491,6 +492,7 @@ public sealed class CellEscape : MonoBehaviour
         rodBody.linearVelocity = new Vector3(-0.86f, 0.15f, -0.16f);
         rodBody.angularVelocity = new Vector3(0.35f, 0.7f, -1.5f);
         yield return new WaitForSeconds(0.30f);
+        motion.SetFloorRodActive(true);
     }
 
     private IEnumerator BlendRod(Vector3 start, Quaternion from, Vector3 end, Quaternion to, float duration, bool holdingHook = false)

@@ -1,5 +1,7 @@
 # Cell Phase 2 bugs
 
+Rows CELL-201 through CELL-216 describe the Phase 2 snapshot at dd2ee60. The follow-up restores the previous camera, light and cart. CELL-217 and CELL-218 track the current collision fixes.
+
 | ID | Severity | Repro | Expected | Actual | Evidence | Owner | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | CELL-201 | P1 | Start Cell and watch the step off the bunk around 2.4 s. | Boots pass over the rod and plant without intersecting it. | A boot enters the stationary rod. Side and top views plus oriented shape checks show genuine 3D overlap. | `Phase2Before/Step-peak-side.png`, `Step-peak-top.png`, 119.50 mm overlap proxy at 2.400 s. | Rod and foot | Verified in Phase2FootGate |
@@ -18,3 +20,5 @@
 | CELL-214 | P2 | Sample editor time at 16:10 while a duplicate preview player remains alive after the startup check. | Only the verifier renders during the comparison. | Unclosed standalone smoke player competed for GPU time. | Phase2Final1610 16.730 ms. Verified the leftover process by path and log argument and closed only that instance. | QA | Verified in Phase2Release1610 (12.700 ms, 78.74 FPS) |
 | CELL-215 | P2 | Open the gate at 21:9. | Near pipes, cart and far corridor are readable. | The top rail of the pipe assembly crosses the top edge at this aspect. | Phase2Release219/SHOT-2.png, both vertical risers and both depth planes visible. | Camera | Justified, the crop preserves the floor and entire hero |
 | CELL-216 | P2 | Repeat the 320 px grayscale edge probe after the light pass. | Aim for approximately 3:1 foreground-to-background contrast. | Open hero, some grate and background prop edges and the thin rod are below target. | Phase2Release169/contrast.json. Hero 2.88 at the bed, open-frame bars 3.69 and hanging key 3.30. Open hero 1.96, closed bars 2.34. | Light and readability | Justified, readable at play scale with original palette and geometry. Actual values retained in the report |
+| CELL-217 | P1 | Knock the hanging key down and inspect its spin beside the skirting. | The key clears the visible wall from release through rest. | The constrained depth lets the spinning shaft enter the render-only skirting. | FollowupBaseline, 140.13 mm overlap. FollowupStep30 and FollowupRelease, 0.00 mm. | Gameplay | Verified |
+| CELL-218 | P1 | Hold Right after the bed exit with the original rod still on the floor. | The boots and shins clear the rod on ordinary walking steps. | The locomotion swing aims through the rod after the wake handoff. | FollowupBaseline, 100.64 mm Boot Near / Rod Metal at 2.700 s. FollowupStep30 and FollowupRelease, 0.00 mm. | Gameplay | Verified |

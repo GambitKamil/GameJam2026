@@ -139,3 +139,16 @@ The Windows x64 release built with zero errors and three Weathered Surface Meta 
 
 - If every thumbnail sample needs 3:1, review the character, matte steel and corridor values with Ali using these paired captures. That art pass could target the open-frame hero and dark pipe edges without adding more local lights.
 - If the full pipe header needs to stay visible on ultrawide, review the vertical composition and the visible floor together at 21:9.
+
+## Follow-up after the composition review
+
+The camera controller, camera scene settings, all 13 light components and the cart prefab instance match `fcfc217`. This restores the original camera movement and lighting and puts the cart back at X=5.14 m. The render-only corridor recess and corrected bed exit are retained. The earlier Phase 2 camera and light evidence describes commit `dd2ee60`.
+
+| Defect | Cause and fix | Measured result |
+| --- | --- | --- |
+| Key entering the wall on the way down | Freezing depth held the spinning key beside the skirting, which has no physical wall collider there. The drop releases the key slightly toward the corridor, and the fixed-step collision correction uses the back edge of the visible key against a plane set by the existing iron mount. The floor settling pose respects the same plane. | Oriented key-to-wall overlap fell from 140.13 mm to 0.00 mm in all sampled frames at 30 and 60 Hz. Settled and dragged floor gap stayed 0.00 mm. |
+| Legs crossing the floor rod after the wake | The normal walk planned its landing and swing without the rod that the wake already knew about. Locomotion now picks a landing beside the expanded rod footprint and uses the existing lift, cross and lower path when the swing intersects that footprint. | Boot/shin overlap fell from 100.64 mm at 2.700 s to 0.00 mm on the 30 and 60 Hz full routes. The existing rod pickup, discard and bed-exit placement still pass. |
+
+`CellEscape.cs` binds the existing wall face and tracks when the rod is on the floor. The key guard is in `CellKeyFall.cs` and the step clearance is in `CellMotion.Locomotion.cs` and `CellMotion.Wake.cs`. The editor probe samples oriented bounds for the key and the nearby wall meshes during the fall, and the boots/shins and rod on the walking route. The scene restores the visual settings in `Cell.unity` and references the original iron mount for the collision plane. The original scene physics components and Art, Packages and ProjectSettings match `fcfc217`.
+
+The full scripted puzzle and restart passed in `FollowupStep60`, `FollowupStep30` and `FollowupRelease` under `D:/GameJam2026/CellMotionEvidence`. The final 60 Hz route sampled 67 key-drop frames and 807 unobstructed actor frames for rod checks. Camera width changed 0.00% at the gate. Both feet recorded 0.00 mm of planted slip and the gameplay console remained clean. The final Windows build reports the same three known shader Meta pass warnings and zero errors. Standalone D3D11 and PhysX startup was also checked with zero runtime diagnostics.

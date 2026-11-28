@@ -19,6 +19,11 @@ public sealed partial class CellMotion
     private int visualFacing = 1;
     private int turnTarget = 1;
     private float turnElapsed;
+    private bool floorRodActive = true;
+    private Vector3 sampledRodPosition;
+    private Quaternion sampledRodRotation;
+
+    internal void SetFloorRodActive(bool active) => floorRodActive = active;
 
     private void InitializeLocomotion()
     {
@@ -164,9 +169,15 @@ public sealed partial class CellMotion
             landing.x = Mathf.MoveTowards(landing.x, foot.Start.x, 0.06f);
 
         foot.Goal = firstSwingFrame ? landing : Vector3.Lerp(foot.Goal, landing, 1f - Mathf.Exp(-26f * Time.deltaTime));
-        foot.FindSupport(this, foot.Goal, out Vector3 target, out RaycastHit hit);
-        foot.Position = Vector3.Lerp(foot.Start, target, Mathf.SmoothStep(0f, 1f, t));
+        if (floorRodActive && wakeRod != null && (wakeRod.position != sampledRodPosition || wakeRod.rotation != sampledRodRotation))
+            CacheWakeRod();
+        Vector3 goal = floorRodActive ? RodLanding(foot.Goal, foot.BootRadius) : foot.Goal;
+        foot.FindSupport(this, goal, out Vector3 target, out RaycastHit hit);
+        float distance = Mathf.SmoothStep(0f, 1f, t);
+        foot.Position = Vector3.Lerp(foot.Start, target, distance);
         foot.Position += Vector3.up * (Mathf.Sin(t * Mathf.PI) * swingClearance * (0.50f + gait * 0.50f));
+        if (floorRodActive)
+            foot.Position = ClearRodSwing(foot, target, t);
         if (t < 1f)
             return;
 
@@ -174,6 +185,57 @@ public sealed partial class CellMotion
         nextFoot = OtherFoot(foot);
         swingingFoot = null;
         footsteps.PlayOneShot(boot, Mathf.Lerp(0.42f, 0.17f, crouchBlend));
+    }
+
+    private Vector3 RodLanding(Vector3 goal, float bootRadius)
+    {
+        if (wakeRodNormal == Vector3.zero)
+            return goal;
+
+        Vector3 offset = goal - wakeRodCenter;
+        float along = Vector3.Dot(offset, wakeRodAxis);
+        float across = Vector3.Dot(offset, wakeRodNormal);
+        float halfLength = wakeRodHalfLength + bootRadius + wakeRodClearance;
+        float halfWidth = wakeRodHalfWidth + bootRadius + wakeRodClearance;
+        if (Mathf.Abs(along) >= halfLength || Mathf.Abs(across) >= halfWidth)
+            return goal;
+
+        // A small sidestep leaves the whole landing footprint on the floor.
+        if (halfLength - Mathf.Abs(along) < halfWidth - Mathf.Abs(across))
+            return goal + wakeRodAxis * (Mathf.Sign(along) * halfLength - along);
+        return goal + wakeRodNormal * (Mathf.Sign(across) * halfWidth - across);
+    }
+
+    private Vector3 ClearRodSwing(FootContact foot, Vector3 target, float progress)
+    {
+        Vector3 point = foot.Position;
+        if (wakeRodNormal == Vector3.zero)
+            return point;
+
+        Vector3 from = foot.Start - wakeRodCenter;
+        Vector3 to = target - wakeRodCenter;
+        float enter = 0f;
+        float exit = 1f;
+        if (!ClipRodSweep(from, to, wakeRodAxis, wakeRodHalfLength + foot.BootRadius, ref enter, ref exit) ||
+            !ClipRodSweep(from, to, wakeRodNormal, wakeRodHalfWidth + foot.BootRadius, ref enter, ref exit))
+            return point;
+
+        // Raise at the old contact before any horizontal movement into the rod.
+        return StepOverRod(foot.Start, target, progress, wakeRodTop + foot.SoleOffset + wakeRodClearance);
+    }
+
+    private static bool ClipRodSweep(Vector3 from, Vector3 to, Vector3 axis, float extent, ref float enter, ref float exit)
+    {
+        float start = Vector3.Dot(from, axis);
+        float delta = Vector3.Dot(to, axis) - start;
+        if (Mathf.Abs(delta) < 0.0001f)
+            return Mathf.Abs(start) <= extent;
+
+        float first = (-extent - start) / delta;
+        float second = (extent - start) / delta;
+        enter = Mathf.Max(enter, Mathf.Min(first, second));
+        exit = Mathf.Min(exit, Mathf.Max(first, second));
+        return enter <= exit;
     }
 
     private Vector3 ConstrainBootLanding(Vector3 point, float bootRadius)
@@ -268,6 +330,8 @@ public sealed partial class CellMotion
         }
 
         public LegPose Leg { get; }
+        public float BootRadius => bootRadius;
+        public float SoleOffset => soleOffset;
         public Vector3 Position { get; set; }
         public Vector3 Start { get; private set; }
         public Vector3 Goal { get; set; }

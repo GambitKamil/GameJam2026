@@ -200,6 +200,8 @@ public sealed partial class CellMotion
         if (shaft == null)
             return;
 
+        sampledRodPosition = wakeRod.position;
+        sampledRodRotation = wakeRod.rotation;
         wakeRodAxis = Vector3.ProjectOnPlane(wakeRod.right, Vector3.up).normalized;
         wakeRodNormal = Vector3.Cross(wakeRodAxis, Vector3.up);
         wakeRodCenter = shaft.bounds.center;
@@ -248,7 +250,11 @@ public sealed partial class CellMotion
         if (startSide * endSide >= 0f)
             return WakeFootArc(from, to, t, lift);
 
-        float clearance = wakeRodTop + soleDepth + wakeRodClearance;
+        return StepOverRod(from, to, t, wakeRodTop + soleDepth + wakeRodClearance);
+    }
+
+    private static Vector3 StepOverRod(Vector3 from, Vector3 to, float t, float clearance)
+    {
         Vector3 raisedFrom = new Vector3(from.x, Mathf.Max(from.y, clearance), from.z);
         Vector3 raisedTo = new Vector3(to.x, Mathf.Max(to.y, clearance), to.z);
         // Clear the shaft before crossing it, then lower the boot once the sole is past it.
