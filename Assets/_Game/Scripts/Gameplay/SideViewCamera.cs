@@ -108,10 +108,10 @@ public sealed class SideViewCamera : MonoBehaviour
             targetX = Mathf.Clamp(targetX, horizontalLimits.x, horizontalLimits.y);
         targetX += horizontalOffset;
 
-        float targetY = authoredY;
-        float targetSize = baseOrthographicSize;
+        float targetSize = FollowOrthographicSize();
         if (usesSubjectFraming)
             targetX = FramingX(targetX, out targetSize);
+        float targetY = openingMotion != null && view.orthographic ? FloorFramingY(targetSize) : authoredY;
 
         if (gateOpened && constrainHorizontalPosition && view.orthographic)
             targetX = Mathf.Min(targetX, LastFollowX(targetSize));
@@ -130,9 +130,7 @@ public sealed class SideViewCamera : MonoBehaviour
         float laneCenter = (openingLeft + openingRight) * 0.5f;
         followPosition.x = laneCenter + followPosition.z * forward.x / forward.z;
         followSize = (openingRight - openingLeft) * 0.5f / LaneHalfWidth(1f, view.aspect);
-        // On wide displays the height narrows. Keep the floor and rod in frame.
-        float laneUp = transform.up.y - forward.y * transform.up.z / forward.z;
-        followPosition.y = authoredY - Mathf.Max(0f, baseOrthographicSize - followSize) * laneUp;
+        followPosition.y = FloorFramingY(followSize);
         horizontalVelocity = verticalVelocity = zoomVelocity = 0f;
         ApplyFrame();
     }
@@ -161,6 +159,23 @@ public sealed class SideViewCamera : MonoBehaviour
         view.orthographicSize = size;
     }
 
+    private float FollowOrthographicSize()
+    {
+        if (openingMotion == null || !view.orthographic)
+            return baseOrthographicSize;
+
+        // The service bay and the right-hand camera limit are laid out in world width.
+        return baseOrthographicSize * ReferenceAspect / Mathf.Max(view.aspect, 0.1f);
+    }
+
+    private float FloorFramingY(float size)
+    {
+        // Lower the center when a wide viewport shortens the shot vertically.
+        Vector3 forward = transform.forward;
+        float laneUp = transform.up.y - forward.y * transform.up.z / forward.z;
+        return authoredY - Mathf.Max(0f, baseOrthographicSize - size) * laneUp;
+    }
+
     private float LastFollowX(float size)
     {
         float wideDisplayAllowance = LaneHalfWidth(baseOrthographicSize, ReferenceAspect) - LaneHalfWidth(size, view.aspect);
@@ -177,7 +192,7 @@ public sealed class SideViewCamera : MonoBehaviour
 
     private float FramingX(float x, out float size)
     {
-        size = baseOrthographicSize;
+        size = FollowOrthographicSize();
         if (framingSubject == null)
             return x;
 
