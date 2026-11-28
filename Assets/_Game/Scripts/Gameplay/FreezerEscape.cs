@@ -11,12 +11,10 @@ public sealed class FreezerEscape : MonoBehaviour
     [SerializeField] private KitchenPassageDoor entranceDoor;
     [SerializeField] private Transform freezerDoor;
     [SerializeField] private Transform laundryDoor;
-    [SerializeField] private Transform serviceGate;
-    [SerializeField] private Transform aisleEntry;
-    [SerializeField] private Transform aisleExit;
     [SerializeField] private Transform levelExit;
     [SerializeField] private Transform brokenRelease;
     [SerializeField] private Transform leverHandle;
+    [SerializeField] private Transform leverGrip;
     [SerializeField] private BoxCollider shortCrate;
     [SerializeField] private BoxCollider tallCrate;
     [SerializeField] private BoxCollider shelf;
@@ -58,9 +56,6 @@ public sealed class FreezerEscape : MonoBehaviour
     private Coroutine leverPull;
     private bool resetting;
     private bool arriving;
-    private bool changingLane;
-    private bool inServiceAisle;
-    private bool serviceGateOpen;
 
     private bool ColdActive => phase is Phase.Trapped or Phase.DoorOpen;
     private float SoleOffset => capsule.center.y - capsule.height * 0.5f;
@@ -119,9 +114,6 @@ public sealed class FreezerEscape : MonoBehaviour
         if (SideViewPlayer.CanReadInput)
         {
             Advance(Time.deltaTime);
-            if (phase is Phase.Kitchen or Phase.Laundry && Input.GetKeyDown(KeyCode.E))
-                UseServiceAisle();
-
             if (phase == Phase.Trapped && climb == null && leverPull == null)
             {
                 if (Input.GetKeyDown(KeyCode.E))
@@ -136,18 +128,6 @@ public sealed class FreezerEscape : MonoBehaviour
 
     private void Advance(float delta)
     {
-        if (changingLane)
-            return;
-
-        if (inServiceAisle)
-        {
-            if (body.position.x >= aisleExit.position.x)
-                StartCoroutine(LeaveServiceAisle(aisleExit, true));
-            else if (body.position.x < aisleEntry.position.x - 0.15f)
-                StartCoroutine(LeaveServiceAisle(aisleEntry, false));
-            return;
-        }
-
         if (phase == Phase.Kitchen && body.position.x >= Doorway + 0.68f)
         {
             phase = Phase.Trapped;
@@ -192,64 +172,6 @@ public sealed class FreezerEscape : MonoBehaviour
         ReleaseCrate();
         motion.EndAction();
         SetPlayerActive(false);
-    }
-
-    private bool NearServiceAisle(Transform marker) => !changingLane && !inServiceAisle &&
-        Mathf.Abs(body.position.x - marker.position.x) < 0.83f;
-
-    private void UseServiceAisle()
-    {
-        if (phase == Phase.Laundry && NearServiceAisle(aisleExit))
-            StartCoroutine(EnterServiceAisle(aisleExit, -1f));
-        else if (serviceGateOpen && NearServiceAisle(aisleEntry))
-            StartCoroutine(EnterServiceAisle(aisleEntry, 1f));
-    }
-
-    private IEnumerator EnterServiceAisle(Transform marker, float direction)
-    {
-        changingLane = true;
-        player.SetDoorwayWalk(true);
-        if (!serviceGateOpen)
-        {
-            Vector3 start = serviceGate.localPosition;
-            float duration = .53f;
-            mechanismSound.Play();
-            for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
-            {
-                float travel = Mathf.SmoothStep(0f, 2.35f, elapsed / duration);
-                serviceGate.localPosition = start + Vector3.up * travel;
-                yield return null;
-            }
-            serviceGate.localPosition = start + Vector3.up * 2.35f;
-            serviceGateOpen = true;
-        }
-
-        // Start inside the aisle so Advance doesn't send the player back to the same room.
-        Vector3 destination = marker.position + Vector3.right * (direction * 0.3f);
-        yield return KitchenPassageDoor.WalkTo(player.transform, destination, 1.9f);
-        inServiceAisle = true;
-        ResumeSideViewWalk(direction);
-    }
-
-    private IEnumerator LeaveServiceAisle(Transform marker, bool intoLaundry)
-    {
-        changingLane = true;
-        player.SetDoorwayWalk(true);
-        var destination = new Vector3(marker.position.x + (intoLaundry ? .35f : -.2f), marker.position.y, 0f);
-        yield return KitchenPassageDoor.WalkTo(player.transform, destination, 1.9f);
-        if (intoLaundry)
-            phase = Phase.Laundry;
-        inServiceAisle = false;
-        ResumeSideViewWalk(intoLaundry ? 1f : -1f);
-    }
-
-    private void ResumeSideViewWalk(float direction)
-    {
-        player.transform.rotation = Quaternion.identity;
-        motion.Face(direction);
-        Physics.SyncTransforms();
-        player.SetDoorwayWalk(false);
-        changingLane = false;
     }
 
     private void FixedUpdate()
@@ -313,7 +235,7 @@ public sealed class FreezerEscape : MonoBehaviour
 
         if (NearBrokenRelease())
         {
-            Show("Release jammed. Emergency lever above the shelves.", 3.2f);
+            Show("Release jammed. Emergency lever in the far corner.", 3.2f);
             return;
         }
 
@@ -451,16 +373,37 @@ public sealed class FreezerEscape : MonoBehaviour
 
     private IEnumerator PullLever()
     {
-        SetPlayerActive(false);
+        player.SetDoorwayWalk(true);
+        Transform actor = player.transform;
+        Vector3 startPosition = actor.position;
+        Vector3 stance = startPosition;
+        stance.x = leverGrip.position.x - .28f;
+        float stepDuration = Mathf.Abs(stance.x - startPosition.x) / 1.55f;
+        for (float elapsed = 0f; elapsed < stepDuration; elapsed += Time.deltaTime)
+        {
+            float step = Mathf.SmoothStep(0f, 1f, elapsed / stepDuration);
+            actor.position = Vector3.Lerp(startPosition, stance, step);
+            yield return null;
+        }
+        actor.position = stance;
+
         motion.Face(leverHandle.position.x - body.position.x);
-        motion.SetHandTarget(leverHandle.TransformPoint(Vector3.up * 0.26f), 1f);
+        const float reachDuration = 0.18f;
+        motion.PlayLibraryGesture(CellAnimationLibrary.Motion.Interact, reachDuration);
+        for (float elapsed = 0f; elapsed < reachDuration; elapsed += Time.deltaTime)
+        {
+            motion.SetHandTarget(leverGrip.position, Mathf.SmoothStep(0f, 1f, elapsed / reachDuration));
+            yield return null;
+        }
+
         Quaternion start = leverHandle.localRotation;
-        Quaternion pulled = start * Quaternion.Euler(0f, 0f, -75f);
+        Quaternion pulled = start * Quaternion.Euler(0f, 0f, 68f);
         const float duration = 0.42f;
         mechanismSound.Play();
         for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
             leverHandle.localRotation = Quaternion.Slerp(start, pulled, Mathf.SmoothStep(0f, 1f, elapsed / duration));
+            motion.SetHandTarget(leverGrip.position, 1f);
             yield return null;
         }
         leverHandle.localRotation = pulled;
@@ -469,12 +412,14 @@ public sealed class FreezerEscape : MonoBehaviour
         phase = Phase.DoorOpen;
         Show("Laundry door open", 2.2f);
         motion.EndAction();
-        SetPlayerActive(true);
+        Physics.SyncTransforms();
+        player.SetDoorwayWalk(false);
         leverPull = null;
     }
 
-    private bool CanPullLever() => Mathf.Abs(body.position.x - leverHandle.position.x) < 0.85f &&
-        Feet >= shelf.bounds.max.y - 0.20f;
+    private bool CanPullLever() => player.IsGrounded &&
+        Mathf.Abs(body.position.x - leverGrip.position.x) < 0.66f &&
+        Mathf.Abs(Feet - shelf.bounds.max.y) < 0.16f;
 
     private bool NearBrokenRelease() => Mathf.Abs(body.position.x - brokenRelease.position.x) < 0.84f;
 
@@ -505,16 +450,8 @@ public sealed class FreezerEscape : MonoBehaviour
             return "Too cold   /   R  Retry";
         if (phase == Phase.Escaped)
             return GameManager.Instance == null ? "R  Replay" : string.Empty;
-        if (changingLane || inServiceAisle)
-            return string.Empty;
         if (phase is Phase.Kitchen or Phase.Laundry)
-        {
-            if (phase == Phase.Laundry && NearServiceAisle(aisleExit))
-                return serviceGateOpen ? "E  Service passage" : "E  Release service gate";
-            if (NearServiceAisle(aisleEntry))
-                return serviceGateOpen ? "E  Service passage" : "Service gate locked from the laundry side";
             return string.Empty;
-        }
         if (Time.time < feedbackUntil)
             return feedback;
         if (phase == Phase.DoorOpen)
@@ -565,8 +502,7 @@ public sealed class FreezerEscape : MonoBehaviour
         kitchenSound.mute = freezerSound.mute = crateSound.mute = mechanismSound.mute = laundrySound.mute = muted;
         mechanismSound.volume = 0.6f * volume;
         float freezerMix = phase == Phase.Frozen || ColdActive ? 1f : 0f;
-        float laundryMix = phase is Phase.Laundry or Phase.Escaped ? 1f :
-            inServiceAisle ? Mathf.InverseLerp(aisleEntry.position.x, aisleExit.position.x, body.position.x) : 0f;
+        float laundryMix = phase is Phase.Laundry or Phase.Escaped ? 1f : 0f;
         freezerSound.volume = Mathf.MoveTowards(freezerSound.volume, freezerMix * 0.29f * volume, Time.unscaledDeltaTime * 0.65f);
         kitchenSound.volume = Mathf.MoveTowards(kitchenSound.volume, (1f - freezerMix) * (1f - laundryMix) * 0.3f * volume, Time.unscaledDeltaTime * 0.85f);
         laundrySound.volume = Mathf.MoveTowards(laundrySound.volume, laundryMix * 0.27f * volume, Time.unscaledDeltaTime * 0.58f);

@@ -89,7 +89,7 @@ public sealed class KitchenPassageDoor : MonoBehaviour
         player.SetDoorwayWalk(false);
     }
 
-    internal static IEnumerator WalkTo(Transform actor, Vector3 destination, float speed)
+    private static IEnumerator WalkTo(Transform actor, Vector3 destination, float speed)
     {
         Vector3 start = actor.position;
         Vector3 delta = destination - start;
