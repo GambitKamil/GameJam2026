@@ -233,7 +233,7 @@ internal static partial class CellPolishVerification
             case 2:
                 Move(0f);
                 ProbeFloor();
-                if (!TickAim())
+                if (!PreparePlayerThrow())
                     return;
                 LaunchBread();
                 Next();
@@ -246,6 +246,7 @@ internal static partial class CellPolishVerification
                 keyTilt = Mathf.Min(keyTilt, 180f - keyTilt);
                 Metric(keyTilt <= 3f, $"Key resting tilt: {keyTilt:F2} degrees");
                 Capture("05-air-catch");
+                RecordShotAnchors("Key beat");
                 Next();
                 break;
             case 4:
@@ -268,6 +269,7 @@ internal static partial class CellPolishVerification
                     return;
                 if (!WalkTo(key.position.x))
                     return;
+                LogKeyVisibility("gate interaction");
                 Call(escape, "Interact");
                 Next();
                 break;
@@ -295,6 +297,8 @@ internal static partial class CellPolishVerification
             case 9:
                 var restarted = Object.FindFirstObjectByType<CellEscape>();
                 if (restarted == null || restarted == escape)
+                    return;
+                if (!CheckCompositionAfterRestart())
                     return;
                 Record($"Restart stage: {Field<object>(restarted, "stage")}");
                 Finish("PASS: puzzle sequence and restart");
@@ -333,7 +337,12 @@ internal static partial class CellPolishVerification
             Vector3 origin = motion.ThrowOrigin(velocity);
             if ((int)Call(bread, "Simulate", origin, velocity, path) < 0)
                 continue;
-            Record($"Bread: found interception with launch angle {degrees - 90} degrees.");
+            Vector3 center = player.transform.position + Vector3.up * 0.48f;
+            Vector3 cursor = view.WorldToViewportPoint(center + velocity.normalized);
+            Record($"Bread: found interception with launch angle {degrees - 90} degrees, cursor viewport={cursor:F4}.");
+            if (verifyVisibleThrow)
+                Metric(cursor.z > 0f && cursor.x >= 0f && cursor.x <= 1f && cursor.y >= 0f && cursor.y <= 1f,
+                    "The successful bread direction is reachable by an on-screen cursor.");
             Call(bread, "Launch", origin, velocity);
             return;
         }
@@ -382,14 +391,16 @@ internal static partial class CellPolishVerification
         source = source == null ? view : source;
         var previous = RenderTexture.active;
         var target = source.targetTexture;
-        var image = new Texture2D(960, 540, TextureFormat.RGB24, false);
-        var capture = RenderTexture.GetTemporary(960, 540, 24);
+        const int height = 540;
+        int width = Mathf.RoundToInt(source.aspect * height);
+        var image = new Texture2D(width, height, TextureFormat.RGB24, false);
+        var capture = RenderTexture.GetTemporary(width, height, 24);
         try
         {
             source.targetTexture = capture;
             source.Render();
             RenderTexture.active = capture;
-            image.ReadPixels(new Rect(0, 0, 960, 540), 0, 0);
+            image.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             File.WriteAllBytes(Path.Combine(output, name + ".png"), image.EncodeToPNG());
         }
         finally
@@ -443,6 +454,7 @@ internal static partial class CellPolishVerification
     {
         Time.captureFramerate = previousCaptureFramerate;
         Application.runInBackground = previousRunInBackground;
+        ReleaseComposition();
         active = false;
         Application.logMessageReceived -= OnLog;
     }

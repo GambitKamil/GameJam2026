@@ -14,7 +14,18 @@ internal static partial class CellPolishVerification
     private static double previousWallFrame, wallSeconds;
     private static int wallFrames;
     private static bool skippedCapture, bedCaptured, gateCaptured;
-    private static float rodMotion;
+    private static float rodMotion, rodRotationMotion, rodScaleMotion;
+    private static float shotLeft, shotRight, previousRight, previousRightStep;
+    private static float revealPeakStep, revealPeakJerk, revealBacktrack, revealFirstFrameStep;
+    private static float resetTime;
+    private static int previousVsync;
+    private static int previousTargetRate;
+    private static bool resetCaptureReady, camClipsWorld, moveDuringReveal, strictComposition;
+    private static readonly Vector3[] previousBootPosition = new Vector3[2];
+    private static readonly bool[] previousBootSupport = new bool[2];
+    private static float wakeFootSlip, wakeFootDepth, comparisonStepTime, approachSettledAt;
+    private static bool aimSampleDone, verifyVisibleThrow, restoreCompositionTiming;
+
 
     private static void InitializeComposition()
     {
@@ -23,18 +34,48 @@ internal static partial class CellPolishVerification
         initialRodPosition = rod.position;
         initialRodRotation = rod.rotation;
         initialRodScale = rod.lossyScale;
-        stepOverlap = stepTime = rodMotion = 0f;
+        stepOverlap = stepTime = rodMotion = rodRotationMotion = rodScaleMotion = 0f;
+        revealPeakStep = revealPeakJerk = revealBacktrack = revealFirstFrameStep = 0f;
+        previousRight = previousRightStep = shotLeft = shotRight = float.NaN;
+        resetTime = approachSettledAt = float.NaN;
+        aimSampleDone = false;
+        verifyVisibleThrow = File.Exists(Path.Combine(output, "check-key-visibility.txt"));
+        resetCaptureReady = camClipsWorld = false;
+        moveDuringReveal = File.Exists(Path.Combine(output, "reveal-moving.txt"));
+        strictComposition = File.Exists(Path.Combine(output, "composition-strict.txt"));
+        comparisonStepTime = ReadCompositionNumber("step-time.txt", 2.4f);
+        for (int i = 0; i < previousBootSupport.Length; i++)
+            previousBootSupport[i] = false;
+        wakeFootSlip = wakeFootDepth = 0f;
         openTime = closedLeft = closedRight = openLeft = openRight = float.NaN;
         bedCaptured = gateCaptured = skippedCapture = false;
         previousWallFrame = wallSeconds = 0.0;
         wallFrames = 0;
+        previousVsync = QualitySettings.vSyncCount;
+        previousTargetRate = Application.targetFrameRate;
+        restoreCompositionTiming = true;
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = -1;
-        string path = Path.Combine(output, "aspect.txt");
-        view.aspect = File.Exists(path) && float.TryParse(File.ReadAllText(path),
+        view.aspect = ReadCompositionNumber("aspect.txt", 16f / 9f);
+        Record($"Composition aspect: {view.aspect:F4}, moving reveal={moveDuringReveal}.");
+    }
+
+    private static float ReadCompositionNumber(string filename, float fallback)
+    {
+        string path = Path.Combine(output, filename);
+        return File.Exists(path) && float.TryParse(File.ReadAllText(path),
             System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float requested)
-            ? requested : 16f / 9f;
-        Record($"Composition aspect: {view.aspect:F4}.");
+            ? requested : fallback;
+    }
+
+    private static void ReleaseComposition()
+    {
+        if (restoreCompositionTiming)
+        {
+            QualitySettings.vSyncCount = previousVsync;
+            Application.targetFrameRate = previousTargetRate;
+            restoreCompositionTiming = false;
+        }
     }
 
     private static void SampleComposition()
@@ -52,11 +93,30 @@ internal static partial class CellPolishVerification
         {
             float elapsed = Time.time - began;
             rodMotion = Mathf.Max(rodMotion, Vector3.Distance(rod.position, initialRodPosition));
+            rodRotationMotion = Mathf.Max(rodRotationMotion, Quaternion.Angle(rod.rotation, initialRodRotation));
+            rodScaleMotion = Mathf.Max(rodScaleMotion, Vector3.Distance(rod.lossyScale, initialRodScale));
+            for (int i = 0; i < boots.Length; i++)
+            {
+                Renderer boot = boots[i];
+                float floorGap = boot.bounds.min.y;
+                bool supported = floorGap >= -0.005f && floorGap <= 0.008f;
+                wakeFootDepth = Mathf.Max(wakeFootDepth, -floorGap);
+                Vector3 position = boot.transform.position;
+                if (supported && previousBootSupport[i])
+                    wakeFootSlip = Mathf.Max(wakeFootSlip, Vector2.Distance(
+                        new Vector2(position.x, position.z),
+                        new Vector2(previousBootPosition[i].x, previousBootPosition[i].z)));
+                previousBootSupport[i] = supported;
+                previousBootPosition[i] = position;
+            }
             if (!bedCaptured && elapsed >= 0.09f)
             {
                 Capture("SHOT-1");
                 bedCaptured = true;
-                Record($"At bed: position={view.transform.position:F4}, size={view.orthographicSize:F4}, left={LaneEdge(0):F4}, right={LaneEdge(1):F4}.");
+                shotLeft = LaneEdge(0);
+                shotRight = LaneEdge(1);
+                Record($"At bed: position={view.transform.position:F4}, size={view.orthographicSize:F4}, left={shotLeft:F4}, right={shotRight:F4}.");
+                RecordShotAnchors("SHOT 1");
             }
 
             float overlap = 0f;
@@ -71,20 +131,33 @@ internal static partial class CellPolishVerification
                 stepTime = elapsed;
                 CaptureStep("Step-peak");
             }
-            float stepFrame = 1.83f;
-            string stepRequest = Path.Combine(output, "step-time.txt");
-            if (File.Exists(stepRequest) && float.TryParse(File.ReadAllText(stepRequest),
-                System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float requested))
-                stepFrame = requested;
-
-            if (elapsed >= stepFrame && elapsed < stepFrame + Time.deltaTime)
+            if (elapsed >= comparisonStepTime && elapsed < comparisonStepTime + Time.deltaTime)
                 CaptureStep("Step-reference");
         }
+
+        camClipsWorld |= Physics.CheckSphere(view.transform.position, view.nearClipPlane, ~0, QueryTriggerInteraction.Ignore);
 
         if (phase == 7 && Stage() == "KeyWithinReach" && motion.Busy)
         {
             closedLeft = LaneEdge(0);
             closedRight = LaneEdge(1);
+            previousRight = closedRight;
+        }
+        if (phase == 7 && Stage() == "GateOpen" && !gateCaptured)
+        {
+            float right = LaneEdge(1);
+            if (!float.IsNaN(previousRight))
+            {
+                float delta = right - previousRight;
+                revealPeakStep = Mathf.Max(revealPeakStep, Mathf.Abs(delta));
+                revealBacktrack = Mathf.Max(revealBacktrack, -delta);
+                if (!float.IsNaN(previousRightStep))
+                    revealPeakJerk = Mathf.Max(revealPeakJerk, Mathf.Abs(delta - previousRightStep));
+                else
+                    revealFirstFrameStep = Mathf.Abs(delta);
+                previousRightStep = delta;
+            }
+            previousRight = right;
         }
     }
 
@@ -95,13 +168,14 @@ internal static partial class CellPolishVerification
         if (float.IsNaN(openTime))
             openTime = Time.time;
 
-        Move(0f);
+        Move(moveDuringReveal ? 1f : 0f);
         if (Time.time - openTime < 1.25f)
             return false;
 
         openLeft = LaneEdge(0);
         openRight = LaneEdge(1);
         Capture("SHOT-2");
+        RecordShotAnchors("SHOT 2");
         gateCaptured = true;
         return true;
     }
@@ -113,12 +187,101 @@ internal static partial class CellPolishVerification
         return lane.Raycast(ray, out float distance) ? ray.GetPoint(distance).x : float.NaN;
     }
 
+    private static bool PreparePlayerThrow()
+    {
+        if (!aimSampleDone)
+        {
+            if (!TickAim())
+                return false;
+            aimSampleDone = true;
+            LogKeyVisibility("bread table");
+        }
+
+        // Verify a visible shot from an ordinary traversable spot when the table framing cuts off the key.
+        if (verifyVisibleThrow && !KeyOnScreen())
+        {
+            if (!WalkTo(gate.position.x - 0.72f))
+                return false;
+            if (float.IsNaN(approachSettledAt))
+                approachSettledAt = Time.time;
+            if (Time.time - approachSettledAt < 0.45f)
+                return false;
+        }
+
+        LogKeyVisibility("throw");
+        if (verifyVisibleThrow)
+        {
+            Metric(KeyOnScreen(), "The hanging key was visible from a reachable throwing position.");
+            Capture("KEY-AIM");
+        }
+        return true;
+    }
+
+    private static bool KeyOnScreen()
+    {
+        Vector3 point = view.WorldToViewportPoint(key.position);
+        return point.z > 0f && point.x >= 0.025f && point.x <= 0.975f && point.y >= 0.025f && point.y <= 0.975f;
+    }
+
+    private static void LogKeyVisibility(string moment)
+    {
+        Vector3 point = view.WorldToViewportPoint(key.position);
+        Record($"Key before {moment}: viewport={point:F4}, actor X={player.transform.position.x:F4}, active={key.gameObject.activeInHierarchy}, inside margins={KeyOnScreen()}.");
+    }
+
+    private static void RecordShotAnchors(string shot)
+    {
+        Vector3 hero = view.WorldToViewportPoint(Field<Transform>(motion, "head").position);
+        Vector3 grate = view.WorldToViewportPoint(gate.position + Vector3.up * 1.2f);
+        Vector3 prop = view.WorldToViewportPoint(rod.position);
+        Vector3 keyPoint = view.WorldToViewportPoint(key.position);
+        Record($"{shot} viewport anchors: hero={hero:F3}, bars={grate:F3}, rod={prop:F3}, key={keyPoint:F3} (active={key.gameObject.activeInHierarchy}).");
+    }
+
+    private static bool CheckCompositionAfterRestart()
+    {
+        if (resetCaptureReady)
+            return true;
+
+        Camera restartedView = Camera.main;
+        if (restartedView == null)
+            return false;
+        if (float.IsNaN(resetTime))
+        {
+            view = restartedView;
+            view.aspect = ReadCompositionNumber("aspect.txt", 16f / 9f);
+            resetTime = Time.time;
+        }
+        if (Time.time - resetTime < 0.09f)
+            return false;
+
+        float leftDrift = Mathf.Abs(LaneEdge(0) - shotLeft);
+        float rightDrift = Mathf.Abs(LaneEdge(1) - shotRight);
+        Record($"Composition reset: left/right drift={leftDrift:F4}/{rightDrift:F4} m at the matching bed beat; aspect={view.aspect:F4}.");
+        if (strictComposition)
+            Metric(leftDrift <= 0.08f && rightDrift <= 0.08f, "Restart restored the original bed framing.");
+        Capture("SHOT-1-restarted");
+        resetCaptureReady = true;
+        return true;
+    }
+
     private static void ReportComposition()
     {
         float extent = closedRight - closedLeft;
         float percent = (openRight - closedRight) / extent * 100f;
         Record($"Composition: closed left/right={closedLeft:F4}/{closedRight:F4}, open left/right={openLeft:F4}/{openRight:F4}, extra right={percent:F2}% of closed width.");
-        Record($"Boot and rod overlap: {stepOverlap:F5} m at {stepTime:F3}s; rod travel during wake={rodMotion:F6} m; initial rod position={initialRodPosition:F6}, rotation={initialRodRotation:F6}, scale={initialRodScale:F6}.");
+        Record($"Reveal motion: max right step={revealPeakStep:F4} m/frame, peak second difference={revealPeakJerk:F4} m/frame squared, first frame step={revealFirstFrameStep:F4} m, reverse step={revealBacktrack:F4} m; camera intersected level={camClipsWorld}.");
+        Record($"Boot and rod overlap: {stepOverlap:F5} m at {stepTime:F3}s; rod wake travel={rodMotion:F6} m, rotation change={rodRotationMotion:F5} degrees, scale change={rodScaleMotion:F6}; initial rod position={initialRodPosition:F6}, rotation={initialRodRotation:F6}, scale={initialRodScale:F6}.");
+        Record($"Wake floor: max consecutive near-floor horizontal boot step={wakeFootSlip:F5} m; max floor penetration={wakeFootDepth:F5} m.");
+        if (strictComposition)
+        {
+            if (!moveDuringReveal)
+                Metric(percent >= 10f && percent <= 15f, $"Gate revealed {percent:F2}% of the closed width to the right.");
+            Metric(revealFirstFrameStep <= extent * 0.02f && !camClipsWorld,
+                "Gate reveal began smoothly and camera remained clear of colliders.");
+            Metric(stepOverlap <= 0.0001f && rodMotion <= 0.0001f && rodRotationMotion <= 0.01f && rodScaleMotion <= 0.0001f,
+                "Bed-exit boots cleared the unchanged rod.");
+        }
         double ms = wallFrames > 0 ? wallSeconds * 1000.0 / wallFrames : 0.0;
         Record($"Frame wall time: {ms:F3} ms mean, {1000.0 / ms:F2} FPS, {wallFrames} uncapped editor frames, excluding direct capture frames.");
     }
