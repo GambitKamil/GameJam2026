@@ -137,6 +137,7 @@ public sealed partial class CellMotion
             }
         }
 
+        FitPlantedStride(ref hipOffset);
         FitPlantedFoot(nearFootContact, ref hipOffset);
         FitPlantedFoot(farFootContact, ref hipOffset);
         nearFootContact.Pose(this, hipOffset);
@@ -200,6 +201,34 @@ public sealed partial class CellMotion
         return leaf.TransformPoint(localPoint + center);
     }
 
+    private const float PlantedReachMargin = 0.005f;
+    private const float MinimumVerticalReachSquared = 0.02f;
+
+    private void FitPlantedStride(ref Vector3 hipOffset)
+    {
+        float minimumX = float.NegativeInfinity;
+        float maximumX = float.PositiveInfinity;
+        IncludePlantedReach(nearFootContact, hipOffset.z, ref minimumX, ref maximumX);
+        IncludePlantedReach(farFootContact, hipOffset.z, ref minimumX, ref maximumX);
+
+        // A long stance or turn can leave a planted foot beyond the reach of a vertical hip correction.
+        if (minimumX <= maximumX)
+            hipOffset.x = Mathf.Clamp(hipOffset.x, minimumX, maximumX);
+    }
+
+    private void IncludePlantedReach(FootContact foot, float hipZ, ref float minimumX, ref float maximumX)
+    {
+        if (!foot.Planted)
+            return;
+
+        Vector3 hipToAnkle = figure.InverseTransformPoint(foot.Position) + foot.Leg.AnkleOffset - foot.Leg.Hip;
+        float depth = hipToAnkle.z - hipZ;
+        float reach = foot.Leg.MaximumReach - PlantedReachMargin;
+        float across = Mathf.Sqrt(Mathf.Max(0f, reach * reach - depth * depth - MinimumVerticalReachSquared));
+        minimumX = Mathf.Max(minimumX, hipToAnkle.x - across);
+        maximumX = Mathf.Min(maximumX, hipToAnkle.x + across);
+    }
+
     private void FitPlantedFoot(FootContact foot, ref Vector3 hipOffset)
     {
         if (!foot.Planted)
@@ -208,8 +237,8 @@ public sealed partial class CellMotion
         Vector3 ankle = figure.InverseTransformPoint(foot.Position) + foot.Leg.AnkleOffset;
         Vector3 hip = foot.Leg.Hip + hipOffset;
         Vector3 delta = ankle - hip;
-        float reach = foot.Leg.MaximumReach - 0.005f;
-        float verticalReach = Mathf.Sqrt(Mathf.Max(0.02f, reach * reach - delta.x * delta.x - delta.z * delta.z));
+        float reach = foot.Leg.MaximumReach - PlantedReachMargin;
+        float verticalReach = Mathf.Sqrt(Mathf.Max(MinimumVerticalReachSquared, reach * reach - delta.x * delta.x - delta.z * delta.z));
         hipOffset.y = Mathf.Min(hipOffset.y, ankle.y + verticalReach - foot.Leg.Hip.y);
     }
 
