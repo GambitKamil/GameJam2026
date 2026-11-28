@@ -230,6 +230,30 @@ internal static partial class CellPolishVerification
         wakeMilestone++;
     }
 
+    private static void CheckRelaxedHands()
+    {
+        var visual = OptionalField<CellPeasantVisual>(motion, "peasantVisual");
+        if (visual == null)
+            return;
+
+        Animator avatar = visual.GetComponentInChildren<Animator>();
+        CheckHand("right", HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm, 1f);
+        CheckHand("left", HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm, -1f);
+
+        void CheckHand(string side, HumanBodyBones handBone, HumanBodyBones elbowBone, float sign)
+        {
+            Transform wrist = avatar.GetBoneTransform(handBone);
+            Transform elbowJoint = avatar.GetBoneTransform(elbowBone);
+            // The two Quaternius hands use mirrored axes for the palm normal.
+            Vector3 palmNormal = wrist.right * sign;
+            float rearward = Vector3.Dot(palmNormal, -visual.transform.forward);
+            float inward = Vector3.Dot(palmNormal, -visual.transform.right * sign);
+            float bend = Vector3.Angle(wrist.up, wrist.position - elbowJoint.position);
+            Metric(rearward > 0.35f && inward > 0.45f && bend < 25f,
+                $"Relaxed {side} hand: rearward={rearward:F2}, inward={inward:F2}, wrist bend={bend:F1} degrees");
+        }
+    }
+
     private static bool TickAim()
     {
         bool released = aimPhase == AimDirections.Length;

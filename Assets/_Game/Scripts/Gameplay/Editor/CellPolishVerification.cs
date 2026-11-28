@@ -228,6 +228,7 @@ internal static partial class CellPolishVerification
                     return;
                 if (Time.time - phaseTime < 0.18f || !VerifyGroundFeeding())
                     return;
+                CheckRelaxedHands();
                 Call(bread, "TakePieceForThrow");
                 if (!bread.IsHoldingPiece)
                     throw new InvalidOperationException("Could not take bread at the table.");

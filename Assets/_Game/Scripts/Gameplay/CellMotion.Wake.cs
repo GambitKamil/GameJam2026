@@ -106,7 +106,7 @@ public sealed partial class CellMotion
                 Mathf.Lerp(40f, -24f, t),
                 ClearWakeBed(nearRolled, nearDangling, mattress, t, enlargedBoots),
                 ClearWakeBed(farRolled, farDangling, mattress, t, enlargedBoots),
-                rotation, rotation);
+                rotation, rotation, headPitch: Mathf.Lerp(0f, -6f, t));
         });
 
         Quaternion plantedRotation = Quaternion.Euler(0f, 59f, 0f);
@@ -123,7 +123,8 @@ public sealed partial class CellMotion
                 WakeFootArc(nearDangling, nearFoot, t, 0.045f),
                 WakeStepAcrossRod(farDangling, parkedFarFoot, farProgress, 0.034f, farSoleDepth),
                 Quaternion.Slerp(seatedRotation, Quaternion.identity, t),
-                Quaternion.Slerp(seatedRotation, plantedRotation, farProgress), Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.1f, 0.75f, t)));
+                Quaternion.Slerp(seatedRotation, plantedRotation, farProgress),
+                Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.1f, 0.75f, t)), Mathf.Lerp(-6f, 12f, t));
         });
         footsteps.PlayOneShot(boot, 0.24f);
 
@@ -133,7 +134,7 @@ public sealed partial class CellMotion
             SetWakeCapsule(capsule, capsuleHeight, capsuleCenter, Mathf.Lerp(0.28f, 0.67f, t));
             PoseWakeWorld(Vector3.Lerp(weightTransfer, halfRise, t),
                 Quaternion.Slerp(plantedRotation, midTurn, t), Mathf.Lerp(-31f, -14f, t), Mathf.Lerp(28f, 15f, t),
-                nearFoot, parkedFarFoot, Quaternion.identity, plantedRotation, 1f);
+                nearFoot, parkedFarFoot, Quaternion.identity, plantedRotation, 1f, Mathf.Lerp(12f, 9f, t));
         });
 
         yield return MoveWake(0.38f, t =>
@@ -152,7 +153,8 @@ public sealed partial class CellMotion
             SetWakeCapsule(capsule, capsuleHeight, capsuleCenter, Mathf.Lerp(0.67f, 1f, t));
             PoseWakeWorld(Vector3.Lerp(halfRise, liveStanding, t), Quaternion.Slerp(midTurn, Quaternion.identity, t),
                 pitch, Mathf.Lerp(15f, 0f, t), nearFoot, WakeStepAcrossRod(parkedFarFoot, liveFarFoot, step, 0.075f, farSoleDepth),
-                Quaternion.identity, Quaternion.Slerp(plantedRotation, Quaternion.identity, step), 1f);
+                Quaternion.identity, Quaternion.Slerp(plantedRotation, Quaternion.identity, step),
+                1f, Mathf.Lerp(9f, 0f, t));
         });
 
         if (wakeRodNormal != Vector3.zero && player.IsGrounded)
@@ -192,12 +194,16 @@ public sealed partial class CellMotion
     }
 
     private void PoseWakeWorld(Vector3 pelvis, Quaternion rotation, float pitch, float arm,
-        Vector3 nearTarget, Vector3 farTarget, Quaternion nearRotation, Quaternion farRotation, float plantedWeight = 0f)
+        Vector3 nearTarget, Vector3 farTarget, Quaternion nearRotation, Quaternion farRotation,
+        float plantedWeight = 0f, float headPitch = 0f)
     {
         if (wakeRodNormal != Vector3.zero && plantedWeight > 0f)
             pelvis.y -= plantedWeight * Mathf.Max(WakePlantHipDrop(frontLeg, pelvis, rotation, nearTarget),
                 WakePlantHipDrop(backLeg, pelvis, rotation, farTarget));
         PlaceWakeHips(pelvis, rotation, Vector3.zero, pitch, arm);
+        // Follow the footing, then lift the gaze independently as the weight comes over the boots.
+        if (peasantVisual != null)
+            neck.localRotation = Quaternion.Euler(0f, 0f, headPitch);
         PoseWakeLegs(Vector3.zero, figure.InverseTransformPoint(nearTarget), figure.InverseTransformPoint(farTarget));
         nearBoot.rotation = nearRotation;
         farBoot.rotation = farRotation;

@@ -34,10 +34,16 @@ public sealed partial class CellMotion : MonoBehaviour
     private LegPose backLeg;
     private Transform neck;
     private GameObject heldBread;
+    private bool holdingBite;
     private Vector3 rest;
     private float phase;
     private float gait;
     private float armAngle;
+    private float presentedArmAngle;
+    private float presentedActionWeight;
+    private float releasedArmAngle;
+    private float releasedActionWeight;
+    private float armReturn;
     private float bend;
     private float chew;
     private int facing = 1;
@@ -135,7 +141,8 @@ public sealed partial class CellMotion : MonoBehaviour
         {
             armAngle = 138f * Mathf.Clamp01(Mathf.Min(elapsed / 0.18f, (0.68f - elapsed) / 0.19f));
             chew = elapsed >= 0.21f ? Mathf.Sin(elapsed * 51f) * 8f : 0f;
-            bite.SetActive(elapsed < 0.25f);
+            holdingBite = elapsed < 0.25f;
+            bite.SetActive(holdingBite);
             bite.transform.position = HandPosition;
             yield return null;
         }
@@ -172,8 +179,15 @@ public sealed partial class CellMotion : MonoBehaviour
 
     public void EndAction()
     {
+        if (peasantVisual != null && Busy && Mathf.Abs(presentedArmAngle) > 5f)
+        {
+            releasedArmAngle = presentedArmAngle;
+            releasedActionWeight = presentedActionWeight;
+            armReturn = 1f;
+        }
         gestureDuration = 0f;
         armAngle = bend = chew = handTargetWeight = 0f;
+        holdingBite = false;
         Busy = false;
     }
 
@@ -240,7 +254,11 @@ public sealed partial class CellMotion : MonoBehaviour
         hipOffset = PoseGroundedFeet(hipOffset);
         torso.localPosition = (frontLeg.Hip + backLeg.Hip) * 0.5f + hipOffset;
         torso.localRotation = Quaternion.Euler(0f, 0f, pitch);
-        shoulder.localRotation = Quaternion.Euler(0f, 0f, arm);
+        // Follow through after the gameplay action frees the player to move again.
+        armReturn = Mathf.MoveTowards(armReturn, 0f, Time.deltaTime / (Busy ? 0.12f : 0.24f));
+        float returnWeight = Mathf.SmoothStep(0f, 1f, armReturn);
+        presentedArmAngle = Mathf.Lerp(arm, releasedArmAngle, returnWeight);
+        shoulder.localRotation = Quaternion.Euler(0f, 0f, presentedArmAngle);
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
         LeanTowardHandTarget();
         ApplyAimPose();
@@ -249,10 +267,15 @@ public sealed partial class CellMotion : MonoBehaviour
             float? maxGripX = gateBlocker != null && gateBlocker.enabled && transform.position.x < gateBlocker.bounds.min.x
                 ? gateBlocker.bounds.min.x - 0.045f
                 : null;
-            peasantVisual.Apply(swing, heldBread != null || carryingRod || handTargetWeight > 0.3f,
+            bool holding = heldBread != null || carryingRod || holdingBite;
+            float gestureWeight = Busy ? Mathf.Clamp01(Mathf.Abs(armAngle) / 45f) : 0f;
+            float aimWeight = Mathf.SmoothStep(0f, 1f, aimBlend);
+            presentedActionWeight = Mathf.Max(returnWeight * releasedActionWeight, Mathf.Max(aimWeight, gestureWeight));
+            peasantVisual.Apply(UpdateArmSwing(), holding || handTargetWeight > 0.3f,
                 requestedGrip: handTarget, reachWeight: handTargetWeight, maxGripX: maxGripX,
                 nearContact: player.IsGrounded ? nearFootContact.Position : null,
-                farContact: player.IsGrounded ? farFootContact.Position : null);
+                farContact: player.IsGrounded ? farFootContact.Position : null,
+                actionWeight: presentedActionWeight);
         }
         if (heldBread != null)
             heldBread.transform.position = peasantVisual != null

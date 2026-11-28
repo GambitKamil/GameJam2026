@@ -14,6 +14,7 @@ public sealed partial class CellMotion
     private FootContact nextFoot;
     private Vector3 previousLocomotionPosition;
     private float motionVelocity;
+    private float armSwing;
     private bool hasLocomotionSample;
     private bool hasFootContacts;
     private int visualFacing = 1;
@@ -53,6 +54,21 @@ public sealed partial class CellMotion
         if (!Busy && player.IsGrounded)
             phase = Mathf.Repeat(phase + Mathf.Abs(displacement) * (2f * Mathf.PI / 0.87f), 2f * Mathf.PI);
         return speed;
+    }
+
+    private float UpdateArmSwing()
+    {
+        float target = 0f;
+        if (hasFootContacts)
+        {
+            // The near arm travels forward as the opposite foot leads the stride.
+            float oppositeFootLead = (farFootContact.Position.x - nearFootContact.Position.x) * visualFacing;
+            target = Mathf.Clamp(oppositeFootLead / (2f * maximumStrideLead), -1f, 1f) * gait;
+        }
+
+        // Smooth changes in stride and let the arms settle as the gait fades.
+        armSwing = Mathf.Lerp(armSwing, target, 1f - Mathf.Exp(-16f * Time.deltaTime));
+        return armSwing;
     }
 
     private void UpdateFigureFacing()

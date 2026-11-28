@@ -67,13 +67,13 @@ public sealed class CellPeasantVisual : MonoBehaviour
         bedSample = new Mesh { name = "Prisoner mattress contact" };
     }
 
-    internal void Apply(float stride, bool gripping, float seated = 0f, float bedPose = 0f,
+    internal void Apply(float armSwing, bool gripping, float seated = 0f, float bedPose = 0f,
         Vector3 requestedGrip = default, float reachWeight = 0f,
         Vector3? nearContact = null, Vector3? farContact = null, Bounds? bedSupport = null, float resting = 0f,
-        float? maxGripX = null, bool snapBedSupport = false)
+        float? maxGripX = null, bool snapBedSupport = false, float actionWeight = 0f)
     {
         bool facingRight = referenceFigure.localScale.x > 0f;
-        float side = facingRight ? 1f : -1f;
+        float nearHandSide = facingRight ? 1f : -1f;
         Quaternion yaw = Quaternion.Euler(0f, facingRight ? 102f : 258f, 0f);
         Quaternion stance = referenceFigure.rotation * yaw;
         transform.SetPositionAndRotation(referenceFigure.position, stance);
@@ -134,6 +134,11 @@ public sealed class CellPeasantVisual : MonoBehaviour
         if (bedSupport is Bounds mattress)
             ApplyBedSupport(mattress, bedPose, snapBedSupport);
 
+        gripBlend = Mathf.MoveTowards(gripBlend, gripping ? 1f : 0f, Time.deltaTime * 10f);
+        float nearAction = Mathf.Max(Mathf.Max(actionWeight, reachWeight), Mathf.Max(gripBlend, bedPose));
+        Vector3 armForward = upperBody * Vector3.forward;
+        Vector3 nearOutward = upperBody * Vector3.right * nearHandSide;
+        Vector3 armUp = Vector3.Slerp(up, upperBody * Vector3.up, 0.3f);
         Vector3 grip = ScaleReach(referenceGrip.position, size);
         grip = Vector3.Lerp(grip, requestedGrip, reachWeight);
         if (maxGripX.HasValue)
@@ -144,22 +149,37 @@ public sealed class CellPeasantVisual : MonoBehaviour
         float liftElbow = (0.28f + 2.55f * seated * (1f - seated)) * bedPose;
         Vector3 nearPole = ScaleReach(referenceElbow.position, size) - nearArm.Start.position
             + towardCamera * (0.16f * size) + Vector3.up * liftElbow;
-        nearArm.Solve(wrist, nearPole, upperBody);
-        nearArm.AimHand(grip - nearArm.End.position, towardCamera);
+        Vector3 neutralNearPole = -armForward + nearOutward * 0.22f;
+        wrist = Vector3.Lerp(RelaxedWrist(nearArm, armUp, armForward, nearOutward, armSwing), wrist, nearAction);
+        nearArm.Solve(wrist, Vector3.Lerp(neutralNearPole, nearPole, nearAction), upperBody);
+        float brace = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.08f, 0.50f, seated)) * bedPose;
+        nearArm.PoseHand(grip - nearArm.End.position, -armForward - nearOutward * 0.74f,
+            towardCamera, nearHandSide, nearAction, brace);
         Grip = nearArm.End.position + nearArm.End.up * palmLength;
 
-        Vector3 farWrist = farArm.Start.position - (up * 0.43f + towardCamera * 0.05f
-            + forward * (0.025f + stride * 0.14f)) * size;
-        farWrist = SupportWakeHand(farWrist, farArm.Start.position, bedSupport, seated);
-        farArm.Solve(farWrist, -forward - towardCamera * 0.35f + Vector3.up * liftElbow, upperBody);
-        farArm.AimHand(-up + forward * 0.08f, -towardCamera);
+        Vector3 farOutward = -nearOutward;
+        Vector3 farWrist = RelaxedWrist(farArm, armUp, armForward, farOutward, -armSwing);
+        Vector3 bedWrist = farArm.Start.position - (up * 0.43f + towardCamera * 0.05f + forward * 0.025f) * size;
+        bedWrist = SupportWakeHand(bedWrist, farArm.Start.position, bedSupport, seated);
+        Vector3 farPole = Vector3.Lerp(-armForward + farOutward * 0.22f,
+            -forward - towardCamera * 0.35f + Vector3.up * liftElbow, bedPose);
+        farArm.Solve(Vector3.Lerp(farWrist, bedWrist, bedPose), farPole, upperBody);
+        farArm.PoseHand(-up + forward * 0.08f, -armForward - farOutward * 0.74f,
+            -towardCamera, -nearHandSide, bedPose, brace);
 
-        gripBlend = Mathf.MoveTowards(gripBlend, gripping ? 1f : 0.35f, Time.deltaTime * 10f);
         for (int i = 0; i < fingers.Length; i++)
         {
             bool isNear = (i < fingers.Length / 2) == facingRight;
-            fingers[i].localRotation = Quaternion.Slerp(openFingers[i], closedFingers[i], isNear ? gripBlend : 0.30f);
+            float curl = isNear ? Mathf.Lerp(0.24f, 1f, gripBlend) : 0.24f;
+            fingers[i].localRotation = Quaternion.Slerp(openFingers[i], closedFingers[i], curl * (1f - 0.45f * brace));
         }
+    }
+
+    private static Vector3 RelaxedWrist(Limb arm, Vector3 up, Vector3 forward, Vector3 outward, float swing)
+    {
+        Vector3 drop = -up + outward * 0.055f + forward * (0.035f + 0.19f * swing);
+        // A near-straight reach leaves a small, natural elbow bend at rest and through the arm swing.
+        return arm.Start.position + drop.normalized * (arm.Length * 0.98f);
     }
 
     private void ApplyBedSupport(Bounds mattress, float weight, bool snap)
@@ -289,6 +309,7 @@ public sealed class CellPeasantVisual : MonoBehaviour
         public Transform End { get; }
         public Quaternion RestEndRotation { get; }
         public float SoleHeight { get; }
+        public float Length => firstLength + secondLength;
 
         private readonly Transform middle;
         private readonly float firstLength, secondLength;
@@ -354,17 +375,42 @@ public sealed class CellPeasantVisual : MonoBehaviour
             middle.rotation = Quaternion.LookRotation(second, normal) * secondRest;
         }
 
-        internal void AimHand(Vector3 fingerDirection, Vector3 palm)
+        internal void PoseHand(Vector3 actionFingers, Vector3 relaxedPalm, Vector3 thumbDirection,
+            float palmSide, float actionWeight, float brace)
         {
-            // The Quaternius hand bones point toward the fingers along local +Y.
-            if (fingerDirection.sqrMagnitude < 0.0001f)
-                fingerDirection = End.position - middle.position;
-            Vector3 across = Vector3.ProjectOnPlane(palm, fingerDirection);
+            Vector3 forearm = (End.position - middle.position).normalized;
+            const float wristBendLimit = 55f * Mathf.Deg2Rad;
+            Vector3 direction = actionFingers.sqrMagnitude > 0.0001f ? actionFingers.normalized : forearm;
+            Vector3 fingers = Vector3.RotateTowards(forearm, direction, wristBendLimit * actionWeight, 0f);
+
+            // On this model +Y points toward the fingers, +Z toward the thumb,
+            // and the mirrored palms face +X on the right hand and -X on the left.
+            Vector3 actionPalm = Vector3.Cross(fingers, thumbDirection) * palmSide;
+            Quaternion relaxed = HandFrame(fingers, relaxedPalm, palmSide);
+            Quaternion action = HandFrame(fingers, actionPalm, palmSide);
+            Quaternion handPose = Quaternion.Slerp(relaxed, action, actionWeight);
+            Vector3 palmDown = Vector3.ProjectOnPlane(Vector3.down, fingers);
+            if (brace > 0f && palmDown.sqrMagnitude > 0.0001f)
+                handPose = Quaternion.Slerp(handPose, HandFrame(fingers, palmDown, palmSide), brace * palmDown.magnitude);
+
+            // Pronation turns the forearm with the hand. Rotate around the actual bone axis so
+            // the grip and elbow solved above remain in place.
+            Vector3 forearmPalm = Vector3.ProjectOnPlane(middle.right, forearm);
+            Vector3 handPalm = Vector3.ProjectOnPlane(handPose * Vector3.right, forearm);
+            if (handPalm.sqrMagnitude > 0.0001f)
+                middle.rotation = Quaternion.AngleAxis(Vector3.SignedAngle(forearmPalm, handPalm, forearm), forearm)
+                    * middle.rotation;
+            End.rotation = handPose;
+        }
+
+        private Quaternion HandFrame(Vector3 fingers, Vector3 palm, float palmSide)
+        {
+            Vector3 across = Vector3.Cross(palm * palmSide, fingers);
             if (across.sqrMagnitude < 0.0001f)
-                across = Vector3.ProjectOnPlane(space.forward, fingerDirection);
+                across = Vector3.ProjectOnPlane(space.forward, fingers);
             if (across.sqrMagnitude < 0.0001f)
-                across = Vector3.ProjectOnPlane(space.right, fingerDirection);
-            End.rotation = Quaternion.LookRotation(across, fingerDirection);
+                across = Vector3.ProjectOnPlane(space.right, fingers);
+            return Quaternion.LookRotation(across, fingers);
         }
     }
 }
