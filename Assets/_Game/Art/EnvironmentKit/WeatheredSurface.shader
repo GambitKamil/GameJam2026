@@ -7,6 +7,9 @@ Shader "Game Jam/Weathered Surface"
         _Metallic ("Metallic", Range(0, 1)) = 0
         _Wear ("Surface Variation", Range(0, 1)) = 0.6
         _Relief ("Surface Relief", Range(0, 0.08)) = 0.024
+        [Toggle(_SURFACE_DETAIL)] _UseSurfaceDetail ("Surface Detail", Float) = 0
+        _SurfaceDetail ("Surface Detail Color", 2D) = "gray" {}
+        _DetailStrength ("Detail Strength", Range(0, 1)) = 0.5
     }
 
     SubShader
@@ -15,14 +18,20 @@ Shader "Game Jam/Weathered Surface"
         CGPROGRAM
         #pragma target 3.0
         #pragma surface surf Standard fullforwardshadows
+        #pragma shader_feature_local _SURFACE_DETAIL
 
         fixed4 _Color;
         half _Glossiness, _Metallic, _Wear, _Relief;
+        sampler2D _SurfaceDetail;
+        half _DetailStrength;
 
         struct Input
         {
             float3 worldPos;
             float3 worldNormal;
+            #if defined(_SURFACE_DETAIL)
+            float2 uv_SurfaceDetail;
+            #endif
             INTERNAL_DATA
         };
 
@@ -55,6 +64,10 @@ Shader "Game Jam/Weathered Surface"
             float tint = (mottling - 0.5) * 0.64 + (grain - 0.5) * 0.35 - deposits * 0.53;
             float3 weathered = _Color.rgb * (1 + _Wear * tint);
             weathered = lerp(weathered, weathered * float3(1.12, 1.0, 0.78), _Wear * deposits);
+            #if defined(_SURFACE_DETAIL)
+            fixed3 surfaceDetail = tex2D(_SurfaceDetail, IN.uv_SurfaceDetail).rgb;
+            weathered *= lerp(1.0, 0.55 + surfaceDetail, _DetailStrength);
+            #endif
 
             float3 surfaceNormal = normalize(WorldNormalVector(IN, float3(0, 0, 1)));
             float3 dx = ddx(worldPosition);
