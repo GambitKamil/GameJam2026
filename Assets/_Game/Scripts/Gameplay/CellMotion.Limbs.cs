@@ -16,6 +16,7 @@ public sealed partial class CellMotion
     private Quaternion handLean = Quaternion.identity;
     private BoxCollider gateBlocker;
     private Renderer[] gateBodyParts;
+    private Bounds[] gateVisualBounds;
     private float gateFront;
 
     private float ArmMaximumReach => armSegmentLength * 2f;
@@ -137,13 +138,17 @@ public sealed partial class CellMotion
             part => !part.transform.IsChildOf(shoulder));
 
         Transform leaf = blocker.transform;
-        Vector3 axis = leaf.right;
-        float origin = Vector3.Dot(leaf.position, axis);
-        float scale = Mathf.Abs(leaf.lossyScale.x);
+        Matrix4x4 worldToGate = leaf.worldToLocalMatrix;
+        var visibleParts = System.Array.FindAll(leaf.GetComponentsInChildren<Renderer>(), part => part.enabled);
+        gateVisualBounds = new Bounds[visibleParts.Length];
         gateFront = blocker.center.x - blocker.size.x * 0.5f;
-        foreach (Renderer part in leaf.GetComponentsInChildren<Renderer>())
-            if (part.enabled)
-                gateFront = Mathf.Min(gateFront, (-FurthestPoint(part, -axis) - origin) / scale);
+        for (int i = 0; i < visibleParts.Length; i++)
+        {
+            Bounds part = BoundsInGateSpace(visibleParts[i], worldToGate);
+            part.Expand(0.010f);
+            gateVisualBounds[i] = part;
+            gateFront = Mathf.Min(gateFront, part.min.x);
+        }
     }
 
     private void LimitTorsoAtGate()
@@ -153,39 +158,34 @@ public sealed partial class CellMotion
 
         Transform leaf = gateBlocker.transform;
         Vector3 actor = leaf.InverseTransformPoint(transform.position);
-        // Closed leaf includes a lock plate and keyhole protruding past the collider.
-        // Keep the upper body inside the cell while permitting the arm and hook to reach.
-        const float clearance = 0.005f;
         if (actor.x > gateFront || gateFront - actor.x > 0.9f
             || Mathf.Abs(actor.z - gateBlocker.center.z) > gateBlocker.size.z * 0.5f + 0.3f)
             return;
 
-        Vector3 axis = leaf.right;
-        float surface = Vector3.Dot(leaf.TransformPoint(new Vector3(gateFront, 0f, 0f)), axis) - clearance;
-        if (TorsoClearsGate(axis, surface))
+        Matrix4x4 worldToGate = leaf.worldToLocalMatrix;
+        if (TorsoClearsGate(worldToGate))
             return;
 
         Quaternion requested = torso.localRotation;
         Quaternion safe = Quaternion.identity;
         torso.localRotation = safe;
-        if (!TorsoClearsGate(axis, surface))
+        if (!TorsoClearsGate(worldToGate))
         {
-            Vector3 away = figure.InverseTransformVector(-axis);
+            Vector3 away = figure.InverseTransformVector(-leaf.right);
             safe = Quaternion.AngleAxis(24f, Vector3.Cross(Vector3.up, away));
             torso.localRotation = safe;
-            if (!TorsoClearsGate(axis, surface))
+            if (!TorsoClearsGate(worldToGate))
                 return;
         }
 
-        // Find the closest safe rotation around the hips. The foot anchors and
-        // shoulder-space arm solve then continue from their original lengths.
+        // Find a clear torso rotation without changing the planted feet or where the hand aims.
         float low = 0f;
         float high = 1f;
         for (int i = 0; i < 7; i++)
         {
             float t = (low + high) * 0.5f;
             torso.localRotation = Quaternion.Slerp(safe, requested, t);
-            if (TorsoClearsGate(axis, surface))
+            if (TorsoClearsGate(worldToGate))
                 low = t;
             else
                 high = t;
@@ -194,21 +194,35 @@ public sealed partial class CellMotion
         torso.localRotation = Quaternion.Slerp(safe, requested, low);
     }
 
-    private bool TorsoClearsGate(Vector3 axis, float surface)
+    private bool TorsoClearsGate(Matrix4x4 worldToGate)
     {
         foreach (Renderer part in gateBodyParts)
-            if (part.enabled && FurthestPoint(part, axis) > surface)
-                return false;
+        {
+            if (!part.enabled)
+                continue;
+
+            Bounds bodyPart = BoundsInGateSpace(part, worldToGate);
+            if (bodyPart.max.x < gateFront)
+                continue;
+
+            foreach (Bounds bar in gateVisualBounds)
+                if (bar.Intersects(bodyPart))
+                    return false;
+        }
+
         return true;
     }
 
-    private static float FurthestPoint(Renderer part, Vector3 axis)
+    private static Bounds BoundsInGateSpace(Renderer part, Matrix4x4 worldToGate)
     {
         Bounds bounds = part.localBounds;
-        Matrix4x4 world = part.localToWorldMatrix;
-        Vector3 localAxis = world.transpose.MultiplyVector(axis);
-        Vector3 absolute = new Vector3(Mathf.Abs(localAxis.x), Mathf.Abs(localAxis.y), Mathf.Abs(localAxis.z));
-        return Vector3.Dot(world.MultiplyPoint3x4(bounds.center), axis) + Vector3.Dot(bounds.extents, absolute);
+        Matrix4x4 rendererToGate = worldToGate * part.localToWorldMatrix;
+        Vector3 extents = Absolute(rendererToGate.MultiplyVector(Vector3.right * bounds.extents.x))
+            + Absolute(rendererToGate.MultiplyVector(Vector3.up * bounds.extents.y))
+            + Absolute(rendererToGate.MultiplyVector(Vector3.forward * bounds.extents.z));
+        return new Bounds(rendererToGate.MultiplyPoint3x4(bounds.center), extents * 2f);
+
+        static Vector3 Absolute(Vector3 value) => new Vector3(Mathf.Abs(value.x), Mathf.Abs(value.y), Mathf.Abs(value.z));
     }
 
     private void AlignHand(Vector3? aimDirection = null, float aimWeight = 0f)
