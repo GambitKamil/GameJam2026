@@ -119,8 +119,8 @@ public sealed class FreezerEscape : MonoBehaviour
         if (SideViewPlayer.CanReadInput)
         {
             Advance(Time.deltaTime);
-            if (phase == Phase.Kitchen && CanUseServiceGate() && Input.GetKeyDown(KeyCode.E))
-                StartCoroutine(EnterServiceAisle());
+            if (phase is Phase.Kitchen or Phase.Laundry && Input.GetKeyDown(KeyCode.E))
+                UseServiceAisle();
 
             if (phase == Phase.Trapped && climb == null && leverPull == null)
             {
@@ -194,10 +194,18 @@ public sealed class FreezerEscape : MonoBehaviour
         SetPlayerActive(false);
     }
 
-    private bool CanUseServiceGate() => !changingLane && !inServiceAisle &&
-        Mathf.Abs(body.position.x - aisleEntry.position.x) < 0.83f;
+    private bool NearServiceAisle(Transform marker) => !changingLane && !inServiceAisle &&
+        Mathf.Abs(body.position.x - marker.position.x) < 0.83f;
 
-    private IEnumerator EnterServiceAisle()
+    private void UseServiceAisle()
+    {
+        if (phase == Phase.Laundry && NearServiceAisle(aisleExit))
+            StartCoroutine(EnterServiceAisle(aisleExit, -1f));
+        else if (serviceGateOpen && NearServiceAisle(aisleEntry))
+            StartCoroutine(EnterServiceAisle(aisleEntry, 1f));
+    }
+
+    private IEnumerator EnterServiceAisle(Transform marker, float direction)
     {
         changingLane = true;
         player.SetDoorwayWalk(true);
@@ -216,9 +224,11 @@ public sealed class FreezerEscape : MonoBehaviour
             serviceGateOpen = true;
         }
 
-        yield return KitchenPassageDoor.WalkTo(player.transform, aisleEntry.position, 1.9f);
+        // Start inside the aisle so Advance doesn't send the player back to the same room.
+        Vector3 destination = marker.position + Vector3.right * (direction * 0.3f);
+        yield return KitchenPassageDoor.WalkTo(player.transform, destination, 1.9f);
         inServiceAisle = true;
-        ResumeSideViewWalk(1f);
+        ResumeSideViewWalk(direction);
     }
 
     private IEnumerator LeaveServiceAisle(Transform marker, bool intoLaundry)
@@ -495,10 +505,16 @@ public sealed class FreezerEscape : MonoBehaviour
             return "Too cold   /   R  Retry";
         if (phase == Phase.Escaped)
             return GameManager.Instance == null ? "R  Replay" : string.Empty;
-        if (changingLane || inServiceAisle || phase == Phase.Laundry)
+        if (changingLane || inServiceAisle)
             return string.Empty;
-        if (phase == Phase.Kitchen)
-            return CanUseServiceGate() ? "E  Service passage" : string.Empty;
+        if (phase is Phase.Kitchen or Phase.Laundry)
+        {
+            if (phase == Phase.Laundry && NearServiceAisle(aisleExit))
+                return serviceGateOpen ? "E  Service passage" : "E  Release service gate";
+            if (NearServiceAisle(aisleEntry))
+                return serviceGateOpen ? "E  Service passage" : "Service gate locked from the laundry side";
+            return string.Empty;
+        }
         if (Time.time < feedbackUntil)
             return feedback;
         if (phase == Phase.DoorOpen)
