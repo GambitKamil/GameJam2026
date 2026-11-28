@@ -49,6 +49,7 @@ public sealed class CellEscape : MonoBehaviour
     private Vector3 hookHandHome;
     private Vector3 hookTipHome;
     private float hookReach;
+    private Vector3 rodGripLocal;
 
     private void Awake()
     {
@@ -315,7 +316,7 @@ public sealed class CellEscape : MonoBehaviour
     {
         mouseMotion.Tick(Time.deltaTime);
         if (liftingRod)
-            rod.position = motion.HandPosition - rod.TransformVector(new Vector3(-0.27f, 0f, 0f));
+            rod.position = motion.HandPosition - rod.TransformVector(rodGripLocal);
         else if (haveRod && !rodInUse)
             CarryRod();
     }
@@ -358,6 +359,9 @@ public sealed class CellEscape : MonoBehaviour
         motion.Face(grip.x - player.transform.position.x);
         motion.PlayLibraryGesture(CellAnimationLibrary.Motion.FloorPickup, 1.08f);
         yield return motion.Reach(18f, 36f, 0.31f);
+        grip = RodGrip(-0.27f);
+        Vector3 pickedGrip = rod.InverseTransformPoint(grip);
+        rodGripLocal = pickedGrip;
         for (float elapsed = 0f; elapsed < 0.21f; elapsed += Time.deltaTime)
         {
             motion.SetHandTarget(grip, Mathf.SmoothStep(0f, 1f, elapsed / 0.21f));
@@ -376,6 +380,7 @@ public sealed class CellEscape : MonoBehaviour
             float t = Mathf.SmoothStep(0f, 1f, elapsed / 0.54f);
             motion.SetHandTarget(grip, 1f - t);
             rod.rotation = Quaternion.Slerp(floorRotation, upright, t);
+            rodGripLocal = Vector3.Lerp(pickedGrip, Vector3.left * 0.27f, t);
             yield return null;
         }
 
@@ -525,7 +530,13 @@ public sealed class CellEscape : MonoBehaviour
         float extension = Mathf.Clamp01(Vector3.Dot(tip - hookTipHome, axis) / Mathf.Max(hookReach, 0.01f));
         Vector3 reach = hookHandHome + axis * (extension * 0.60f);
         float grip = Mathf.Clamp(rod.InverseTransformPoint(reach).x, -0.39f, 0.29f);
-        motion.SetHandTarget(rod.TransformPoint(new Vector3(grip, 0f, 0f)), 1f);
+        motion.SetHandTarget(RodGrip(grip), 1f);
+    }
+
+    private Vector3 RodGrip(float preferred)
+    {
+        return motion.GripWithinReach(rod.TransformPoint(new Vector3(-0.39f, 0f, 0f)),
+            rod.TransformPoint(new Vector3(0.29f, 0f, 0f)), rod.TransformPoint(new Vector3(preferred, 0f, 0f)));
     }
 
     private Vector3 GateContact()

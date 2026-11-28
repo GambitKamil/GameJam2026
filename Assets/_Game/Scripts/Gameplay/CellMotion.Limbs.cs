@@ -4,6 +4,8 @@ public sealed partial class CellMotion
 {
     [SerializeField, Range(0.15f, 0.45f)] private float minimumArmExtension = 0.27f;
 
+    [SerializeField, Range(0f, 30f)] private float maximumHandLean = 24f;
+
     private static readonly Vector3 ElbowPole = new Vector3(0f, -0.35f, -1f);
     private Transform upperArm;
     private Transform forearm;
@@ -11,6 +13,7 @@ public sealed partial class CellMotion
     private Vector3 armRestElbow;
     private Vector3 armRestWrist;
     private float armSegmentLength;
+    private Quaternion handLean = Quaternion.identity;
 
     private float ArmMaximumReach => armSegmentLength * 2f;
 
@@ -77,6 +80,48 @@ public sealed partial class CellMotion
         skin.reflectionProbeUsage = original.reflectionProbeUsage;
         skin.updateWhenOffscreen = true;
         original.enabled = false;
+    }
+
+    internal Vector3 GripWithinReach(Vector3 start, Vector3 end, Vector3 preferred)
+    {
+        Vector3 shaft = end - start;
+        float length = shaft.magnitude;
+        if (length < 0.001f)
+            return start;
+
+        Vector3 axis = shaft / length;
+        float projection = Vector3.Dot(shoulder.position - start, axis);
+        Vector3 nearest = start + axis * projection;
+        float chord = Mathf.Sqrt(Mathf.Max(0f, ArmMaximumReach * ArmMaximumReach - (nearest - shoulder.position).sqrMagnitude));
+        float minimum = Mathf.Max(0f, projection - chord);
+        float maximum = Mathf.Min(length, projection + chord);
+        float desired = Vector3.Dot(preferred - start, axis);
+        float grip = minimum <= maximum ? Mathf.Clamp(desired, minimum, maximum) : Mathf.Clamp(projection, 0f, length);
+        return start + axis * grip;
+    }
+
+    private void LeanTowardHandTarget()
+    {
+        Quaternion targetLean = Quaternion.identity;
+        if (handTargetWeight > 0f)
+        {
+            Vector3 target = figure.InverseTransformPoint(handTarget) - torso.localPosition;
+            Vector3 shoulderOffset = torso.localRotation * shoulder.localPosition;
+            float distance = target.magnitude;
+            float lever = shoulderOffset.magnitude;
+            if (distance > 0.001f && lever > 0.001f && (target - shoulderOffset).sqrMagnitude > ArmMaximumReach * ArmMaximumReach)
+            {
+                float cosine = (distance * distance + lever * lever - ArmMaximumReach * ArmMaximumReach) / (2f * distance * lever);
+                float reachableAngle = Mathf.Acos(Mathf.Clamp(cosine, -1f, 1f)) * Mathf.Rad2Deg;
+                float restAngle = Vector3.Angle(shoulderOffset, target);
+                float leanAngle = Mathf.Clamp(restAngle - reachableAngle, 0f, maximumHandLean) * handTargetWeight;
+                targetLean = Quaternion.RotateTowards(Quaternion.identity, Quaternion.FromToRotation(shoulderOffset, target), leanAngle);
+            }
+        }
+
+        // Move the shoulder over the planted stance before solving the fixed-length reach.
+        handLean = Quaternion.RotateTowards(handLean, targetLean, 200f * Time.deltaTime);
+        torso.localRotation = handLean * torso.localRotation;
     }
 
     private void AlignHand(Vector3? aimDirection = null, float aimWeight = 0f)

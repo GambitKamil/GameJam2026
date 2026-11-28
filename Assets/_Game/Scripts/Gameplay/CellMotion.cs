@@ -237,6 +237,7 @@ public sealed partial class CellMotion : MonoBehaviour
         torso.localRotation = Quaternion.Euler(0f, 0f, pitch);
         shoulder.localRotation = Quaternion.Euler(0f, 0f, arm);
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
+        LeanTowardHandTarget();
         ApplyAimPose();
         if (heldBread != null)
             heldBread.transform.position = hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
