@@ -31,8 +31,8 @@ public sealed class CellLampFlicker : MonoBehaviour
         if (now >= nextDip)
         {
             dipStart = now;
-            dipDuration = Random.Range(0.11f, 0.32f);
-            dipStrength = Random.Range(0.16f, 0.43f);
+            dipDuration = Random.Range(0.16f, 0.46f);
+            dipStrength = Random.Range(0.42f, 0.72f);
             ScheduleNextDip();
         }
 
@@ -41,7 +41,7 @@ public sealed class CellLampFlicker : MonoBehaviour
         if (dipStart >= 0f && phase < 1f)
         {
             float envelope = Mathf.Sin(phase * Mathf.PI);
-            dim = dipStrength * envelope * Mathf.Lerp(0.6f, 1f, Mathf.PerlinNoise(seed, now * 34f));
+            dim = dipStrength * envelope * Mathf.Lerp(0.39f, 1f, Mathf.PerlinNoise(seed, now * 46f));
         }
 
         float output = 0.98f + (Mathf.PerlinNoise(seed, now * 3f) - 0.5f) * 0.055f - dim;

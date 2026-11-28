@@ -20,8 +20,9 @@ public sealed class CellMotion : MonoBehaviour
     private AudioSource footsteps;
     private AudioClip boot;
     private Transform shoulder;
-    private Transform frontHip;
-    private Transform backHip;
+    private Transform torso;
+    private LegPose frontLeg;
+    private LegPose backLeg;
     private Transform neck;
     private GameObject heldBread;
     private Vector3 rest;
@@ -43,10 +44,12 @@ public sealed class CellMotion : MonoBehaviour
         footsteps = GetComponent<AudioSource>();
         rest = figure.localPosition;
         shoulder = Pivot("Throw Shoulder", sleeve.position + Vector3.up * 0.11f, sleeve, hand);
-        // The model has one visible arm. Keep that arm on the camera side.
-        frontHip = Pivot("Near Hip", nearLeg.position + Vector3.up * 0.31f, nearLeg, nearBoot);
-        backHip = Pivot("Far Hip", farLeg.position + Vector3.up * 0.31f, farLeg, farBoot);
         neck = Pivot("Neck", head.position - Vector3.up * 0.14f, head, nose, hair, eye);
+        frontLeg = new LegPose(nearLeg, nearBoot);
+        backLeg = new LegPose(farLeg, farBoot);
+        Vector3 hips = (frontLeg.Hip + backLeg.Hip) * 0.5f;
+        torso = Pivot("Torso at Hips", figure.TransformPoint(hips), figure.Find("Jacket"),
+            figure.Find("Jacket Seam"), shoulder, neck);
         boot = MakeFootstep();
     }
 
@@ -174,16 +177,69 @@ public sealed class CellMotion : MonoBehaviour
         striding = walking;
 
         figure.localScale = new Vector3(facing, 1f, 1f);
+        figure.localPosition = rest;
         float swing = Mathf.Sin(phase) * gait;
-        figure.localPosition = rest + Vector3.up * (Mathf.Abs(swing) * 0.055f - bend * 0.008f);
-        figure.localRotation = Quaternion.Euler(0f, 0f, -bend * facing - 5f * gait * facing);
-        frontHip.localRotation = Quaternion.Euler(0f, 0f, 34f * swing);
-        backHip.localRotation = Quaternion.Euler(0f, 0f, -34f * swing);
+        float crouch = Mathf.Clamp01(bend / 36f);
+        float bob = Mathf.Abs(swing) * 0.025f;
+        var hipOffset = new Vector3(-0.15f * crouch, bob - 0.43f * crouch, 0f);
+        torso.localPosition = (frontLeg.Hip + backLeg.Hip) * 0.5f + hipOffset;
+        torso.localRotation = Quaternion.Euler(0f, 0f, -33f * crouch - 5f * gait);
+        frontLeg.Pose(phase, gait, hipOffset, crouch);
+        backLeg.Pose(phase + Mathf.PI, gait, hipOffset, crouch);
         float restingArm = carryingRod ? 42f - 7f * swing : -26f * swing;
         shoulder.localRotation = Quaternion.Euler(0f, 0f, Busy ? armAngle : heldBread != null ? 67f : restingArm);
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
         if (heldBread != null)
             heldBread.transform.position = hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
+    }
+
+    private sealed class LegPose
+    {
+        private readonly Transform thigh;
+        private readonly Transform shin;
+        private readonly Transform boot;
+        private readonly Vector3 bootHome;
+        private readonly Vector3 ankleOffset = new Vector3(0f, 0.075f, 0f);
+        private readonly Vector3 width;
+        private readonly float length;
+
+        public Vector3 Hip { get; }
+
+        public LegPose(Transform leg, Transform shoe)
+        {
+            thigh = leg;
+            boot = shoe;
+            bootHome = boot.localPosition;
+            Hip = leg.localPosition + Vector3.up * 0.32f;
+            width = leg.localScale;
+            length = Vector3.Distance(Hip, bootHome + ankleOffset) * 0.52f;
+            shin = Instantiate(leg, leg.parent, false);
+            shin.name = leg.name + " Shin";
+        }
+
+        public void Pose(float phase, float gait, Vector3 hipOffset, float crouch)
+        {
+            Vector3 stride = new Vector3(
+                Mathf.Sin(phase) * 0.23f * gait,
+                Mathf.Max(0f, Mathf.Cos(phase)) * 0.12f * gait, 0f) * (1f - crouch);
+            Vector3 ankle = bootHome + stride + ankleOffset;
+            Vector3 hip = Hip + hipOffset;
+            Vector3 axis = ankle - hip;
+            Vector3 ahead = new Vector3(-axis.y, axis.x, 0f).normalized;
+            float kneeTravel = Mathf.Sqrt(Mathf.Max(0f, length * length - axis.sqrMagnitude * 0.25f));
+            Vector3 knee = (hip + ankle) * 0.5f + ahead * kneeTravel;
+
+            PlaceSegment(thigh, hip, knee, 1f);
+            PlaceSegment(shin, knee, ankle, 0.87f);
+            boot.localPosition = bootHome + stride;
+        }
+
+        private void PlaceSegment(Transform segment, Vector3 upper, Vector3 lower, float taper)
+        {
+            segment.localPosition = (upper + lower) * 0.5f;
+            segment.localRotation = Quaternion.FromToRotation(Vector3.up, upper - lower);
+            segment.localScale = new Vector3(width.x * taper, Vector3.Distance(upper, lower) + 0.055f, width.z * taper);
+        }
     }
 
     private static AudioClip MakeFootstep()

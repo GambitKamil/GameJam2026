@@ -13,7 +13,7 @@ public sealed class CellEscape : MonoBehaviour
     [SerializeField] private Transform exit;
     [SerializeField] private AudioSource sound;
 
-    private enum Stage { FindBread, MouseJumping, KeyBehindGate, KeyWithinReach, HaveKey, GateOpen, ExitOpen, Complete }
+    private enum Stage { FindBread, MouseJumping, KeyBehindGate, KeyWithinReach, GateOpen, ExitOpen, Complete }
 
     private Stage stage;
     private bool haveRod;
@@ -295,9 +295,17 @@ public sealed class CellEscape : MonoBehaviour
             return;
 
         wanderStart = mouse.position;
-        float x = Mathf.Clamp(wanderStart.x + Random.Range(-2.2f, 1.85f), gate.position.x + 0.95f, exit.position.x - 0.55f);
-        wanderTarget = new Vector3(x, 0f, Random.Range(0.45f, 0.86f));
-        wanderDuration = Mathf.Max(0.24f, Vector3.Distance(wanderStart, wanderTarget) / Random.Range(0.85f, 1.55f));
+        const float groundLane = 0.64f;
+        var plane = new Plane(Vector3.forward, new Vector3(0f, 0f, groundLane));
+        float preferred = Mathf.Clamp(player.transform.position.x + Random.Range(0.65f, 2.5f), -6.45f, 6.45f);
+        Ray left = levelCamera.ViewportPointToRay(new Vector3(0.21f, 0.35f, 0f));
+        Ray right = levelCamera.ViewportPointToRay(new Vector3(0.78f, 0.35f, 0f));
+        if (plane.Raycast(left, out float leftDistance) && plane.Raycast(right, out float rightDistance))
+            preferred = Mathf.Clamp(preferred, left.GetPoint(leftDistance).x, right.GetPoint(rightDistance).x);
+        float x = Mathf.Clamp(preferred, -6.45f, 6.45f);
+        wanderTarget = new Vector3(x, 0f, Random.Range(0.44f, 0.71f));
+        float distance = Vector3.Distance(wanderStart, wanderTarget);
+        wanderDuration = Mathf.Max(0.30f, distance / Mathf.Lerp(1.20f, 2.9f, Mathf.Clamp01(distance / 4f)));
         wanderTime = 0f;
         FaceMouse(wanderTarget.x - wanderStart.x);
     }
@@ -333,11 +341,7 @@ public sealed class CellEscape : MonoBehaviour
         if (stage == Stage.KeyBehindGate && haveRod && Near(gate, 1f))
             StartCoroutine(PullKey());
         else if (stage == Stage.KeyWithinReach && Near(key, 0.72f))
-        {
-            StartCoroutine(PickUpKey());
-        }
-        else if (stage == Stage.HaveKey && Near(gate, 1f))
-            StartCoroutine(Open(gate, 100f, Stage.GateOpen));
+            StartCoroutine(PickUpKeyAndOpenGate());
         else if (stage == Stage.GateOpen && Near(exit, 1f))
             StartCoroutine(Open(exit, -100f, Stage.ExitOpen));
     }
@@ -347,7 +351,7 @@ public sealed class CellEscape : MonoBehaviour
         moving = true;
         rodInUse = true;
         motion.Face(rod.position.x - player.transform.position.x);
-        yield return motion.Reach(-28f, 36f, 0.25f);
+        yield return motion.Reach(18f, 36f, 0.30f);
         yield return Move(rod, motion.HandPosition, 0.30f, 0.09f);
         Quaternion floorRotation = rod.rotation;
         StartCoroutine(motion.Reach(65f, 0f, 0.25f));
@@ -364,16 +368,16 @@ public sealed class CellEscape : MonoBehaviour
         moving = false;
     }
 
-    private IEnumerator PickUpKey()
+    private IEnumerator PickUpKeyAndOpenGate()
     {
         moving = true;
         motion.Face(key.position.x - player.transform.position.x);
         yield return motion.Reach(-25f, 34f, 0.25f);
         yield return Move(key, motion.HandPosition, 0.26f, 0.10f);
         key.gameObject.SetActive(false);
-        stage = Stage.HaveKey;
+        yield return motion.Reach(54f, 0f, 0.26f);
+        yield return Open(gate, 100f, Stage.GateOpen);
         motion.EndAction();
-        moving = false;
     }
 
     private IEnumerator PullKey()
@@ -399,7 +403,7 @@ public sealed class CellEscape : MonoBehaviour
         }
 
         key.position = retrieved;
-        yield return ReturnRodToHand();
+        yield return DiscardRod();
         rodInUse = false;
         stage = Stage.KeyWithinReach;
         motion.EndAction();
@@ -416,14 +420,24 @@ public sealed class CellEscape : MonoBehaviour
         yield return BlendRod(start, startRotation, target, targetRotation, 0.27f);
     }
 
-    private IEnumerator ReturnRodToHand()
+    private IEnumerator DiscardRod()
     {
-        Vector3 start = rod.position;
-        Quaternion startRotation = rod.rotation;
-        CarryRod();
-        Vector3 target = rod.position;
-        Quaternion targetRotation = rod.rotation;
-        yield return BlendRod(start, startRotation, target, targetRotation, 0.28f);
+        haveRod = false;
+        motion.SetCarryingRod(false);
+        StartCoroutine(motion.Reach(-22f, 4f, 0.30f));
+        Vector3 release = rod.position;
+        Quaternion pose = rod.rotation;
+        Vector3 drop = new Vector3(gate.position.x - 2.20f, 0.055f, -0.36f);
+        Quaternion resting = Quaternion.Euler(0f, 47f, 0f);
+        for (float elapsed = 0f; elapsed < 0.55f; elapsed += Time.deltaTime)
+        {
+            float t = elapsed / 0.55f;
+            Vector3 position = Vector3.Lerp(release, drop, t) + Vector3.up * (0.28f * 4f * t * (1f - t));
+            rod.SetPositionAndRotation(position, Quaternion.Slerp(pose, resting, t));
+            yield return null;
+        }
+
+        rod.SetPositionAndRotation(drop, resting);
     }
 
     private IEnumerator BlendRod(Vector3 start, Quaternion from, Vector3 end, Quaternion to, float duration)
@@ -515,10 +529,8 @@ public sealed class CellEscape : MonoBehaviour
             prompt = "Cell complete.  R - Restart";
         else if (!moving && stage == Stage.GateOpen && Near(exit, 1f))
             prompt = "E - Open door";
-        else if (!moving && stage == Stage.HaveKey && Near(gate, 1f))
-            prompt = "E - Unlock gate";
         else if (!moving && stage == Stage.KeyWithinReach && Near(key, 0.72f))
-            prompt = "E - Pick up key";
+            prompt = "E - Pick up key and unlock gate";
         else if (!moving && stage == Stage.KeyBehindGate && Near(gate, 1f))
             prompt = haveRod ? "E - Hook the key" : "The rod is under the bunk.";
         else if (!haveRod && stage <= Stage.KeyBehindGate && Near(rod, 0.75f))
