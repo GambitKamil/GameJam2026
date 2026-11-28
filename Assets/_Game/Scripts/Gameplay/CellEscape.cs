@@ -333,7 +333,7 @@ public sealed class CellEscape : MonoBehaviour
         Vector3 grip = motion.HandPosition;
         if (motion.OccupiesHand)
             grip = player.transform.position + new Vector3(-side * 0.20f, -0.03f, 0.24f);
-        float tilt = motion.OccupiesHand ? 108f : 82f;
+        float tilt = motion.OccupiesHand ? 108f : Mathf.Lerp(82f, 65f, motion.FootprintScale - 1f);
         rod.rotation = Quaternion.Euler(0f, 0f, side > 0f ? tilt : 180f - tilt);
         rod.position = grip - rod.TransformVector(new Vector3(-0.27f, 0f, 0f));
     }

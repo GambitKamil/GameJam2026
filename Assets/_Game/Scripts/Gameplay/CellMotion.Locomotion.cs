@@ -171,7 +171,7 @@ public sealed partial class CellMotion
         foot.Goal = firstSwingFrame ? landing : Vector3.Lerp(foot.Goal, landing, 1f - Mathf.Exp(-26f * Time.deltaTime));
         if (floorRodActive && wakeRod != null && (wakeRod.position != sampledRodPosition || wakeRod.rotation != sampledRodRotation))
             CacheWakeRod();
-        Vector3 goal = floorRodActive ? RodLanding(foot.Goal, foot.BootRadius) : foot.Goal;
+        Vector3 goal = floorRodActive ? RodLanding(foot.Goal, foot.RadiusFor(this)) : foot.Goal;
         foot.FindSupport(this, goal, out Vector3 target, out RaycastHit hit);
         float distance = Mathf.SmoothStep(0f, 1f, t);
         foot.Position = Vector3.Lerp(foot.Start, target, distance);
@@ -216,8 +216,8 @@ public sealed partial class CellMotion
         Vector3 to = target - wakeRodCenter;
         float enter = 0f;
         float exit = 1f;
-        if (!ClipRodSweep(from, to, wakeRodAxis, wakeRodHalfLength + foot.BootRadius, ref enter, ref exit) ||
-            !ClipRodSweep(from, to, wakeRodNormal, wakeRodHalfWidth + foot.BootRadius, ref enter, ref exit))
+        if (!ClipRodSweep(from, to, wakeRodAxis, wakeRodHalfLength + foot.RadiusFor(this), ref enter, ref exit) ||
+            !ClipRodSweep(from, to, wakeRodNormal, wakeRodHalfWidth + foot.RadiusFor(this), ref enter, ref exit))
             return point;
 
         // Raise at the old contact before any horizontal movement into the rod.
@@ -330,7 +330,7 @@ public sealed partial class CellMotion
         }
 
         public LegPose Leg { get; }
-        public float BootRadius => bootRadius;
+        public float RadiusFor(CellMotion motion) => bootRadius * Mathf.Lerp(1f, 1.78f, motion.FootprintScale - 1f);
         public float SoleOffset => soleOffset;
         public Vector3 Position { get; set; }
         public Vector3 Start { get; private set; }
@@ -355,7 +355,7 @@ public sealed partial class CellMotion
 
         public void FindSupport(CellMotion motion, Vector3 point, out Vector3 target, out RaycastHit hit)
         {
-            point = motion.ConstrainBootLanding(point, bootRadius);
+            point = motion.ConstrainBootLanding(point, RadiusFor(motion));
             Vector3 sole = point - Vector3.up * soleOffset;
             // Foot probes span the boot silhouette offset and small floor height changes.
             bool found = motion.player.TryGetSupport(sole, 0.14f, 0.20f, out hit);

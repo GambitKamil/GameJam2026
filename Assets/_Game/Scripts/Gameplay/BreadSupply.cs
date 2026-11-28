@@ -76,7 +76,7 @@ public sealed class BreadSupply : MonoBehaviour
             return;
         }
 
-        Vector3 center = player.transform.position + Vector3.up * 0.48f;
+        Vector3 center = motion.AimPivot;
         var plane = new Plane(Vector3.forward, center);
         Ray ray = levelCamera.ScreenPointToRay(Input.mousePosition);
         if (plane.Raycast(ray, out float distance))

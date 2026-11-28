@@ -22,8 +22,10 @@ public sealed partial class CellMotion
     }
 
     private SideViewCamera openingCamera;
+    private Bounds wakeMattress;
+    private float wakeBedWeight;
+    private float wakeRestBlend;
     private float seatedBlend;
-    private float lyingBlend;
     private Vector3 wakeHips;
     private Vector3 wakeNearHome;
     private Vector3 wakeFarHome;
@@ -41,6 +43,9 @@ public sealed partial class CellMotion
         wakeFarHome = farBoot.localPosition;
         CacheWakeRod();
         Bounds mattress = bunkMattress.bounds;
+        wakeMattress = mattress;
+        // The cushion rounds away from its top plane right at the rim.
+        wakeMattress.Expand(new Vector3(-0.04f, 0f, -0.025f));
         Vector3 standing = transform.TransformPoint(rest + wakeHips);
         Vector3 nearFoot = WakePlant(transform.TransformPoint(rest + wakeNearHome), nearBoot, nearFootContact);
         Vector3 farHome = transform.TransformPoint(rest + wakeFarHome);
@@ -67,7 +72,8 @@ public sealed partial class CellMotion
         if (!float.IsPositiveInfinity(bottom))
             lying.y += Mathf.Max(0f, mattress.max.y + 0.012f - bottom);
         PoseWakeLocal(lying, lyingRotation, tuck, -3f, 18f, wakeNearHome, wakeFarHome);
-        lyingBlend = 1f;
+        wakeBedWeight = 1f;
+        wakeRestBlend = 1f;
         ApplyWakeVisual(true);
         yield return new WaitForSeconds(0.15f * wakeDurationScale);
 
@@ -77,7 +83,7 @@ public sealed partial class CellMotion
         Vector3 farTucked = wakeFarHome + new Vector3(0.06f, 0.04f, 0f);
         yield return MoveWake(0.42f, t =>
         {
-            lyingBlend = 1f - t;
+            wakeRestBlend = 1f - t;
             PoseWakeLocal(Vector3.Lerp(lying, rolled, t), Quaternion.Slerp(lyingRotation, rolledRotation, t),
                 tuck * (1f - t), Mathf.Lerp(-3f, -16f, t), Mathf.Lerp(18f, 40f, t),
                 Vector3.Lerp(wakeNearHome, nearTucked, t), Vector3.Lerp(wakeFarHome, farTucked, t));
@@ -87,16 +93,19 @@ public sealed partial class CellMotion
         Vector3 farRolled = farBoot.position;
         Quaternion seatedRotation = Quaternion.Euler(0f, 82f, 0f);
         var seated = new Vector3(standing.x, mattress.max.y + 0.17f, mattress.min.z + 0.025f);
-        var nearDangling = new Vector3(seated.x - 0.12f, nearFoot.y + 0.25f, mattress.min.z - 0.39f);
-        var farDangling = new Vector3(seated.x + 0.12f, farFoot.y + 0.27f, mattress.min.z - 0.30f);
+        bool enlargedBoots = peasantVisual != null;
+        float nearRimClearance = enlargedBoots ? 0.49f : 0.39f;
+        float farRimClearance = enlargedBoots ? 0.44f : 0.30f;
+        var nearDangling = new Vector3(seated.x - 0.12f, nearFoot.y + 0.25f, mattress.min.z - nearRimClearance);
+        var farDangling = new Vector3(seated.x + 0.12f, farFoot.y + 0.27f, mattress.min.z - farRimClearance);
         yield return MoveWake(0.65f, t =>
         {
             seatedBlend = t;
             Quaternion rotation = Quaternion.Slerp(rolledRotation, seatedRotation, t);
             PoseWakeWorld(Vector3.Lerp(rolled, seated, t), rotation, Mathf.Lerp(-16f, -10f, t),
                 Mathf.Lerp(40f, -24f, t),
-                ClearWakeBed(nearRolled, nearDangling, mattress, t),
-                ClearWakeBed(farRolled, farDangling, mattress, t),
+                ClearWakeBed(nearRolled, nearDangling, mattress, t, enlargedBoots),
+                ClearWakeBed(farRolled, farDangling, mattress, t, enlargedBoots),
                 rotation, rotation);
         });
 
@@ -104,6 +113,8 @@ public sealed partial class CellMotion
         yield return MoveWake(0.59f, t =>
         {
             seatedBlend = 1f - t;
+            // Hand over the weight from the mattress before the second boot takes the floor.
+            wakeBedWeight = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.25f, 0.78f, t));
             float farProgress = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 0.78f, t));
             Quaternion rotation = Quaternion.Slerp(seatedRotation, plantedRotation, t);
             SetWakeCapsule(capsule, capsuleHeight, capsuleCenter, t * 0.28f);
@@ -161,9 +172,11 @@ public sealed partial class CellMotion
         if (peasantVisual == null)
             return;
 
-        peasantVisual.Apply(0f, false, seatedBlend);
-        peasantVisual.transform.position -= Vector3.up * (lyingBlend * 0.125f);
-        openingCamera?.FrameOpening(peasantVisual.HeadPosition, snapCamera);
+        Bounds? support = wakeBedWeight > 0f ? wakeMattress : null;
+        peasantVisual.Apply(0f, false, seatedBlend, bedPose: wakeBedWeight,
+            bedSupport: support, resting: wakeRestBlend, snapBedSupport: snapCamera);
+        Vector3 framingPoint = peasantVisual.HeadPosition - Vector3.right * (0.16f * wakeRestBlend);
+        openingCamera?.FrameOpening(framingPoint, snapCamera);
     }
 
     private IEnumerator MoveWake(float duration, Action<float> sample)
@@ -300,8 +313,23 @@ public sealed partial class CellMotion
         return Mathf.Max(0f, delta.y - verticalReach);
     }
 
-    private static Vector3 ClearWakeBed(Vector3 from, Vector3 to, Bounds mattress, float t)
+    private static Vector3 ClearWakeBed(Vector3 from, Vector3 to, Bounds mattress, float t, bool enlargedBoot)
     {
+        if (enlargedBoot)
+        {
+            // Lift, carry the heel across the whole rim, then let the boot hang from the knee.
+            const float liftUntil = 0.27f;
+            const float pastRim = 0.78f;
+            float liftedY = Mathf.Max(from.y, mattress.max.y + 0.29f);
+            var lifted = new Vector3(from.x, liftedY, from.z);
+            var clearRim = new Vector3(to.x, liftedY, to.z);
+            if (t < liftUntil)
+                return Vector3.Lerp(from, lifted, Mathf.SmoothStep(0f, 1f, t / liftUntil));
+            if (t < pastRim)
+                return Vector3.Lerp(lifted, clearRim, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(liftUntil, pastRim, t)));
+            return Vector3.Lerp(clearRim, to, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(pastRim, 1f, t)));
+        }
+
         // Keep the boot over the mattress until its heel has crossed the frame's front edge.
         var clear = new Vector3(to.x, mattress.max.y + 0.155f, mattress.min.z - 0.26f);
         const float clearancePhase = 0.65f;

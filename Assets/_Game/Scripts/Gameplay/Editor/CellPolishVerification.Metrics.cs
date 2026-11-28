@@ -273,7 +273,7 @@ internal static partial class CellPolishVerification
             $"Aim {AimNames[aimPhase]}: steady-state arm/forearm error={lastAimAngle:F2} degrees, settle={TimeLabel(aimSettled)}, maximum forearm step={aimStep:F2} degrees");
         DriveBreadAim(direction);
         var guide = Field<LineRenderer>(bread, "preview");
-        float gap = Vector3.Distance(guide.GetPosition(0), hand.position);
+        float gap = Vector3.Distance(guide.GetPosition(0), motion.HandPosition);
         Metric(gap <= 0.001f, $"Aim {AimNames[aimPhase]} guide to hand: {gap:F4} m.");
         Capture(aimPhase == 0 ? "04-aim-right" : "04b-aim-left");
         aimPhase++;

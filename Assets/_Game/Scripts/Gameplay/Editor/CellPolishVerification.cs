@@ -386,7 +386,7 @@ internal static partial class CellPolishVerification
             PoseNextThrow();
             return false;
         }
-        Vector3 center = player.transform.position + Vector3.up * 0.48f;
+        Vector3 center = motion.AimPivot;
         Vector3 cursor = view.WorldToViewportPoint(center + launchDirection);
         Record($"Bread: found interception from the aimed hand at {launchAngle:F0} degrees, cursor viewport={cursor:F4}.");
         if (verifyVisibleThrow)

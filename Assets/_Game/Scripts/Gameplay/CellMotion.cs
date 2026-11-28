@@ -99,6 +99,8 @@ public sealed partial class CellMotion : MonoBehaviour
 
     public Vector3 HandPosition => peasantVisual != null ? peasantVisual.Grip : hand.position;
     public Vector3 ThrowOrigin(Vector3 direction) => HandPosition;
+    internal float FootprintScale => peasantVisual != null ? peasantVisual.FootprintScale : 1f;
+    public Vector3 AimPivot => transform.position + Vector3.up * (peasantVisual != null ? peasantVisual.AimHeight : 0.48f);
 
     public void Hold(GameObject template)
     {
@@ -242,7 +244,16 @@ public sealed partial class CellMotion : MonoBehaviour
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
         LeanTowardHandTarget();
         ApplyAimPose();
-        peasantVisual?.Apply(swing, heldBread != null || carryingRod || handTargetWeight > 0.3f);
+        if (peasantVisual != null)
+        {
+            float? maxGripX = gateBlocker != null && gateBlocker.enabled && transform.position.x < gateBlocker.bounds.min.x
+                ? gateBlocker.bounds.min.x - 0.045f
+                : null;
+            peasantVisual.Apply(swing, heldBread != null || carryingRod || handTargetWeight > 0.3f,
+                requestedGrip: handTarget, reachWeight: handTargetWeight, maxGripX: maxGripX,
+                nearContact: player.IsGrounded ? nearFootContact.Position : null,
+                farContact: player.IsGrounded ? farFootContact.Position : null);
+        }
         if (heldBread != null)
             heldBread.transform.position = peasantVisual != null
                 ? HandPosition

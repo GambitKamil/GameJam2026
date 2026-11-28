@@ -1,10 +1,13 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>Fits the humanoid skin to the Cell controller's authored pose and contacts.</summary>
 public sealed class CellPeasantVisual : MonoBehaviour
 {
     [SerializeField] private Animator avatar;
-    [SerializeField, Range(0.8f, 1f)] private float scale = 0.94f;
+    private const float BaseScale = 0.94f;
+
+    [SerializeField, Range(0.8f, 2f)] private float scale = BaseScale;
 
     private Transform referenceFigure, referenceTorso, referenceNeck, referenceElbow, referenceGrip;
     private Transform nearShoe, farShoe;
@@ -15,6 +18,15 @@ public sealed class CellPeasantVisual : MonoBehaviour
     private Transform[] fingers;
     private Quaternion[] openFingers, closedFingers;
     private float gripBlend;
+    private Renderer[] referenceRenderers;
+    private SkinnedMeshRenderer[] bedContactParts;
+    private Mesh bedSample;
+    private float bedOffset;
+    private readonly List<Vector3> bedVertices = new List<Vector3>();
+
+    private float PoseScale => scale / BaseScale;
+    internal float FootprintScale => PoseScale;
+    internal float AimHeight => 0.48f + (PoseScale - 1f) * 1.29f;
 
     internal Vector3 Grip { get; private set; }
     internal Vector3 HeadPosition => head.position;
@@ -47,11 +59,18 @@ public sealed class CellPeasantVisual : MonoBehaviour
         Grip = referenceGrip.position;
 
         // The old geometry still supplies the existing bounds probes for boot, bunk and grille.
-        foreach (Renderer part in referenceFigure.GetComponentsInChildren<Renderer>(true))
+        referenceRenderers = referenceFigure.GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer part in referenceRenderers)
             part.forceRenderingOff = true;
+        bedContactParts = System.Array.FindAll(avatar.GetComponentsInChildren<SkinnedMeshRenderer>(),
+            part => part.name == "Male_Peasant_Body" || part.name == "Male_Peasant_Legs");
+        bedSample = new Mesh { name = "Prisoner mattress contact" };
     }
 
-    internal void Apply(float stride, bool gripping, float seated = 0f)
+    internal void Apply(float stride, bool gripping, float seated = 0f, float bedPose = 0f,
+        Vector3 requestedGrip = default, float reachWeight = 0f,
+        Vector3? nearContact = null, Vector3? farContact = null, Bounds? bedSupport = null, float resting = 0f,
+        float? maxGripX = null, bool snapBedSupport = false)
     {
         bool facingRight = referenceFigure.localScale.x > 0f;
         float side = facingRight ? 1f : -1f;
@@ -63,18 +82,23 @@ public sealed class CellPeasantVisual : MonoBehaviour
         Limb farLeg = facingRight ? leftLeg : rightLeg;
         Quaternion nearHeading = nearShoe.rotation * yaw;
         Quaternion farHeading = farShoe.rotation * yaw;
-        Vector3 nearAnkle = Ankle(nearShoe, nearSole, nearLeg, nearHeading);
-        Vector3 farAnkle = Ankle(farShoe, farSole, farLeg, farHeading);
         Vector3 up = stance * Vector3.up;
         Vector3 forward = stance * Vector3.forward;
+        float size = PoseScale;
+        float lying = (1f - Mathf.Abs(Vector3.Dot(up, Vector3.up))) * bedPose;
+        Vector3 nearAnkle = Ankle(nearShoe, nearContact, nearSole, nearLeg, nearHeading, lying, seated);
+        Vector3 farAnkle = Ankle(farShoe, farContact, farSole, farLeg, farHeading, lying, seated);
+        if (bedSupport.HasValue && resting > 0f)
+        {
+            float restingAnkle = bedSupport.Value.max.y + 0.126f * size;
+            nearAnkle.y = Mathf.Lerp(nearAnkle.y, restingAnkle, resting);
+            farAnkle.y = Mathf.Lerp(farAnkle.y, restingAnkle + 0.025f, resting);
+        }
 
-        pelvis.SetPositionAndRotation(referenceTorso.position + up * Mathf.Lerp(0.116f, 0.02f, seated), stance * pelvisRest);
-        float hipDrop = Mathf.Max(nearLeg.DropForReach(nearAnkle, up), farLeg.DropForReach(farAnkle, up));
-        pelvis.position -= up * hipDrop;
-        nearLeg.Solve(nearAnkle, forward);
-        farLeg.Solve(farAnkle, forward);
-        nearLeg.End.rotation = nearHeading * nearLeg.RestEndRotation;
-        farLeg.End.rotation = farHeading * farLeg.RestEndRotation;
+        Vector3 basePelvis = referenceTorso.position + up * Mathf.Lerp(0.116f, 0.02f, seated);
+        float freeHeight = (1f - lying) * (1f - seated);
+        float scaledHeight = referenceFigure.InverseTransformPoint(basePelvis).y * (size - 1f) * freeHeight;
+        pelvis.SetPositionAndRotation(basePelvis + up * scaledHeight, stance * pelvisRest);
 
         Quaternion torso = referenceTorso.localRotation;
         if (!facingRight)
@@ -89,17 +113,45 @@ public sealed class CellPeasantVisual : MonoBehaviour
         Limb nearArm = facingRight ? rightArm : leftArm;
         Limb farArm = facingRight ? leftArm : rightArm;
         Vector3 towardCamera = referenceFigure.rotation * Vector3.back;
-        Vector3 nearDirection = (referenceGrip.position - nearArm.Start.position).normalized;
-        const float palmLength = 0.068f;
-        Vector3 wrist = referenceGrip.position - nearDirection * palmLength;
-        Vector3 nearPole = referenceElbow.position - nearArm.Start.position + towardCamera * 0.16f;
+        float palmLength = 0.068f * size;
+        float hipDrop = Mathf.Max(nearLeg.DropForReach(nearAnkle, up), farLeg.DropForReach(farAnkle, up));
+        if (reachWeight > 0f && requestedGrip.y < 1.0f)
+        {
+            // Bring the shoulder down before a low pickup so the visible arm can reach the item.
+            float reachDrop = nearArm.DropForReach(requestedGrip + up * palmLength, up);
+            float support = Mathf.Max(Vector3.Dot(nearAnkle, up) - nearLeg.SoleHeight,
+                Vector3.Dot(farAnkle, up) - farLeg.SoleHeight);
+            float availableDrop = Mathf.Max(0f, Vector3.Dot(pelvis.position, up) - support - 0.33f * size);
+            hipDrop = Mathf.Max(hipDrop, Mathf.Min(reachDrop * reachWeight, availableDrop));
+        }
+        pelvis.position -= up * hipDrop;
+
+        nearLeg.Solve(nearAnkle, forward);
+        farLeg.Solve(farAnkle, forward);
+        nearLeg.End.rotation = nearHeading * nearLeg.RestEndRotation;
+        farLeg.End.rotation = farHeading * farLeg.RestEndRotation;
+
+        if (bedSupport is Bounds mattress)
+            ApplyBedSupport(mattress, bedPose, snapBedSupport);
+
+        Vector3 grip = ScaleReach(referenceGrip.position, size);
+        grip = Vector3.Lerp(grip, requestedGrip, reachWeight);
+        if (maxGripX.HasValue)
+            grip.x = Mathf.Min(grip.x, maxGripX.Value);
+        grip = SupportWakeHand(grip, nearArm.Start.position, bedSupport, seated);
+        Vector3 nearDirection = (grip - nearArm.Start.position).normalized;
+        Vector3 wrist = grip - nearDirection * palmLength;
+        float liftElbow = (0.28f + 2.55f * seated * (1f - seated)) * bedPose;
+        Vector3 nearPole = ScaleReach(referenceElbow.position, size) - nearArm.Start.position
+            + towardCamera * (0.16f * size) + Vector3.up * liftElbow;
         nearArm.Solve(wrist, nearPole, upperBody);
-        // Rotate with the forearm, with the palm centered on the same reach as the bread and rod.
-        nearArm.AimHand(referenceGrip.position - nearArm.End.position, towardCamera);
+        nearArm.AimHand(grip - nearArm.End.position, towardCamera);
         Grip = nearArm.End.position + nearArm.End.up * palmLength;
 
-        Vector3 farWrist = farArm.Start.position - up * 0.43f - towardCamera * 0.05f - forward * (0.025f + stride * 0.14f);
-        farArm.Solve(farWrist, -forward - towardCamera * 0.35f, upperBody);
+        Vector3 farWrist = farArm.Start.position - (up * 0.43f + towardCamera * 0.05f
+            + forward * (0.025f + stride * 0.14f)) * size;
+        farWrist = SupportWakeHand(farWrist, farArm.Start.position, bedSupport, seated);
+        farArm.Solve(farWrist, -forward - towardCamera * 0.35f + Vector3.up * liftElbow, upperBody);
         farArm.AimHand(-up + forward * 0.08f, -towardCamera);
 
         gripBlend = Mathf.MoveTowards(gripBlend, gripping ? 1f : 0.35f, Time.deltaTime * 10f);
@@ -110,8 +162,86 @@ public sealed class CellPeasantVisual : MonoBehaviour
         }
     }
 
-    private Vector3 Ankle(Transform shoe, float sole, Limb leg, Quaternion heading)
-        => shoe.position - shoe.up * sole + heading * (Vector3.up * leg.SoleHeight - Vector3.forward * 0.02f);
+    private void ApplyBedSupport(Bounds mattress, float weight, bool snap)
+    {
+        if (TryGetBedSupport(mattress, out float surface))
+        {
+            const float clothClearance = 0.004f;
+            float correction = mattress.max.y + clothClearance - surface;
+            if (Mathf.Abs(correction) <= 0.8f)
+                bedOffset = snap || correction > bedOffset
+                    ? correction
+                    : Mathf.MoveTowards(bedOffset, correction, 3.8f * Time.deltaTime);
+        }
+
+        // Solve hands in world space after settling the torso so the support does not sink them into the frame.
+        transform.position += Vector3.up * (bedOffset * weight);
+    }
+
+    private bool TryGetBedSupport(Bounds mattress, out float lowestY)
+    {
+        lowestY = float.PositiveInfinity;
+        foreach (SkinnedMeshRenderer part in bedContactParts)
+        {
+            // BakeMesh already includes the imported FBX scale in this overload.
+            part.BakeMesh(bedSample, false);
+            bedSample.GetVertices(bedVertices);
+            Matrix4x4 world = Matrix4x4.TRS(part.transform.position, part.transform.rotation, Vector3.one);
+            foreach (Vector3 vertex in bedVertices)
+            {
+                Vector3 point = world.MultiplyPoint3x4(vertex);
+                if (point.x >= mattress.min.x && point.x <= mattress.max.x &&
+                    point.z >= mattress.min.z && point.z <= mattress.max.z)
+                    lowestY = Mathf.Min(lowestY, point.y);
+            }
+        }
+        return float.IsFinite(lowestY);
+    }
+
+    private void OnDestroy()
+    {
+        if (bedSample != null)
+            Destroy(bedSample);
+        if (referenceRenderers == null)
+            return;
+        foreach (Renderer part in referenceRenderers)
+            if (part != null)
+                part.forceRenderingOff = false;
+    }
+
+    private Vector3 ScaleReach(Vector3 point, float size)
+    {
+        Vector3 offset = referenceFigure.InverseTransformVector(point - referenceTorso.position);
+        return pelvis.position - referenceFigure.up * (0.116f * size) + referenceFigure.TransformVector(offset * size);
+    }
+
+    private static Vector3 SupportWakeHand(Vector3 point, Vector3 shoulder, Bounds? mattress, float seated)
+    {
+        if (!(mattress is Bounds bed))
+            return point;
+
+        // A palm above the rim can brace the body during the swing of the legs.
+        float brace = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.08f, 0.50f, seated));
+        Vector3 support = new Vector3(Mathf.Clamp(shoulder.x, bed.min.x + 0.10f, bed.max.x - 0.10f),
+            bed.max.y + 0.14f, bed.min.z + 0.18f);
+        point = Vector3.Lerp(point, support, brace);
+        if (point.x >= bed.min.x - 0.06f && point.x <= bed.max.x + 0.06f &&
+            point.z >= bed.min.z - 0.20f && point.z <= bed.max.z + 0.06f)
+            point.y = Mathf.Max(point.y, bed.max.y + 0.15f);
+        return point;
+    }
+
+    private Vector3 Ankle(Transform shoe, Vector3? contactTarget, float sole, Limb leg, Quaternion heading,
+        float lying, float seated)
+    {
+        Vector3 contact = (contactTarget ?? shoe.position) - shoe.up * sole;
+        Vector3 local = referenceFigure.InverseTransformVector(contact - referenceTorso.position);
+        Vector3 laidOut = referenceTorso.position + referenceFigure.TransformVector(local * PoseScale);
+        Vector3 lateral = referenceFigure.TransformVector(new Vector3(0f, 0f, local.z * (PoseScale - 1f)));
+        Vector3 grounded = contact + lateral * (1f - seated);
+        return Vector3.Lerp(grounded, laidOut, lying)
+            + heading * (Vector3.up * leg.SoleHeight - Vector3.forward * (0.02f * PoseScale));
+    }
 
     private Quaternion LocalRotation(Transform bone) => Quaternion.Inverse(transform.rotation) * bone.rotation;
 
@@ -185,7 +315,7 @@ public sealed class CellPeasantVisual : MonoBehaviour
             firstRest = Quaternion.Inverse(Quaternion.LookRotation(first, restNormal)) * upperBind;
             secondRest = Quaternion.Inverse(Quaternion.LookRotation(second, restNormal)) * inverse * middle.rotation;
             RestEndRotation = inverse * end.rotation;
-            SoleHeight = space.InverseTransformPoint(end.position).y * space.lossyScale.y + 0.006f;
+            SoleHeight = (space.InverseTransformPoint(end.position).y + 0.011f) * space.lossyScale.y;
         }
 
         internal float DropForReach(Vector3 target, Vector3 up)
