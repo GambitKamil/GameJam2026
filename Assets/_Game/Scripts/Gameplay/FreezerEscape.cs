@@ -5,11 +5,16 @@ using UnityEngine.SceneManagement;
 [DefaultExecutionOrder(150)]
 public sealed class FreezerEscape : MonoBehaviour
 {
-    private enum Phase { Kitchen, Trapped, DoorOpen, Frozen, Escaped }
+    private enum Phase { Kitchen, Trapped, DoorOpen, Frozen, Laundry, Escaped }
 
     [SerializeField] private SideViewPlayer player;
     [SerializeField] private KitchenPassageDoor entranceDoor;
     [SerializeField] private Transform freezerDoor;
+    [SerializeField] private Transform laundryDoor;
+    [SerializeField] private Transform serviceGate;
+    [SerializeField] private Transform aisleEntry;
+    [SerializeField] private Transform aisleExit;
+    [SerializeField] private Transform levelExit;
     [SerializeField] private Transform brokenRelease;
     [SerializeField] private Transform leverHandle;
     [SerializeField] private BoxCollider shortCrate;
@@ -22,6 +27,7 @@ public sealed class FreezerEscape : MonoBehaviour
     [SerializeField] private AudioSource freezerSound;
     [SerializeField] private AudioSource mechanismSound;
     [SerializeField] private AudioSource crateSound;
+    [SerializeField] private AudioSource laundrySound;
     [SerializeField] private UnityEngine.UI.RawImage frost;
     [SerializeField] private UnityEngine.UI.Text clockLabel;
     [SerializeField] private UnityEngine.UI.Text hintLabel;
@@ -42,6 +48,7 @@ public sealed class FreezerEscape : MonoBehaviour
     private float remaining;
     private float cold;
     private float closedDoorHeight;
+    private float closedLaundryHeight;
     private float shortCrateStart;
     private float tallCrateStart;
     private float gripOffset;
@@ -51,6 +58,9 @@ public sealed class FreezerEscape : MonoBehaviour
     private Coroutine leverPull;
     private bool resetting;
     private bool arriving;
+    private bool changingLane;
+    private bool inServiceAisle;
+    private bool serviceGateOpen;
 
     private bool ColdActive => phase is Phase.Trapped or Phase.DoorOpen;
     private float SoleOffset => capsule.center.y - capsule.height * 0.5f;
@@ -66,10 +76,12 @@ public sealed class FreezerEscape : MonoBehaviour
         shortCrateStart = shortCrate.transform.position.x;
         tallCrateStart = tallCrate.transform.position.x;
         closedDoorHeight = freezerDoor.position.y;
+        closedLaundryHeight = laundryDoor.position.y;
         remaining = secondsBeforeFreezing;
-        SetDoorHeight(closedDoorHeight + doorTravel);
+        SetDoorHeight(freezerDoor, closedDoorHeight + doorTravel);
         freezerSound.volume = 0f;
         crateSound.volume = 0f;
+        laundrySound.volume = 0f;
     }
 
     private void Start()
@@ -107,6 +119,9 @@ public sealed class FreezerEscape : MonoBehaviour
         if (SideViewPlayer.CanReadInput)
         {
             Advance(Time.deltaTime);
+            if (phase == Phase.Kitchen && CanUseServiceGate() && Input.GetKeyDown(KeyCode.E))
+                StartCoroutine(EnterServiceAisle());
+
             if (phase == Phase.Trapped && climb == null && leverPull == null)
             {
                 if (Input.GetKeyDown(KeyCode.E))
@@ -121,6 +136,18 @@ public sealed class FreezerEscape : MonoBehaviour
 
     private void Advance(float delta)
     {
+        if (changingLane)
+            return;
+
+        if (inServiceAisle)
+        {
+            if (body.position.x >= aisleExit.position.x)
+                StartCoroutine(LeaveServiceAisle(aisleExit, true));
+            else if (body.position.x < aisleEntry.position.x - 0.15f)
+                StartCoroutine(LeaveServiceAisle(aisleEntry, false));
+            return;
+        }
+
         if (phase == Phase.Kitchen && body.position.x >= Doorway + 0.68f)
         {
             phase = Phase.Trapped;
@@ -128,7 +155,13 @@ public sealed class FreezerEscape : MonoBehaviour
             Show("Door locked   /   Find the emergency release", 2.5f);
         }
 
-        if (phase == Phase.DoorOpen && body.position.x <= Doorway - 0.65f)
+        if (phase == Phase.DoorOpen && body.position.x >= laundryDoor.position.x + 0.65f)
+        {
+            SetDoorHeight(laundryDoor, closedLaundryHeight + doorTravel);
+            phase = Phase.Laundry;
+        }
+
+        if (phase == Phase.Laundry && body.position.x >= levelExit.position.x)
         {
             phase = Phase.Escaped;
             SetPlayerActive(false);
@@ -142,8 +175,12 @@ public sealed class FreezerEscape : MonoBehaviour
 
         remaining = Mathf.Max(0f, remaining - delta);
         cold = 1f - remaining / secondsBeforeFreezing;
-        float desiredHeight = closedDoorHeight + (phase == Phase.DoorOpen ? doorTravel : 0f);
-        SetDoorHeight(Mathf.MoveTowards(freezerDoor.position.y, desiredHeight, delta * 3.5f));
+        SetDoorHeight(freezerDoor, Mathf.MoveTowards(freezerDoor.position.y, closedDoorHeight, delta * 3.5f));
+        if (phase == Phase.DoorOpen)
+        {
+            float target = closedLaundryHeight + doorTravel;
+            SetDoorHeight(laundryDoor, Mathf.MoveTowards(laundryDoor.position.y, target, delta * 3.5f));
+        }
         if (remaining > 0f)
             return;
 
@@ -155,6 +192,54 @@ public sealed class FreezerEscape : MonoBehaviour
         ReleaseCrate();
         motion.EndAction();
         SetPlayerActive(false);
+    }
+
+    private bool CanUseServiceGate() => !changingLane && !inServiceAisle &&
+        Mathf.Abs(body.position.x - aisleEntry.position.x) < 0.83f;
+
+    private IEnumerator EnterServiceAisle()
+    {
+        changingLane = true;
+        player.SetDoorwayWalk(true);
+        if (!serviceGateOpen)
+        {
+            Vector3 start = serviceGate.localPosition;
+            float duration = .53f;
+            mechanismSound.Play();
+            for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+            {
+                float travel = Mathf.SmoothStep(0f, 2.35f, elapsed / duration);
+                serviceGate.localPosition = start + Vector3.up * travel;
+                yield return null;
+            }
+            serviceGate.localPosition = start + Vector3.up * 2.35f;
+            serviceGateOpen = true;
+        }
+
+        yield return KitchenPassageDoor.WalkTo(player.transform, aisleEntry.position, 1.9f);
+        inServiceAisle = true;
+        ResumeSideViewWalk(1f);
+    }
+
+    private IEnumerator LeaveServiceAisle(Transform marker, bool intoLaundry)
+    {
+        changingLane = true;
+        player.SetDoorwayWalk(true);
+        var destination = new Vector3(marker.position.x + (intoLaundry ? .35f : -.2f), marker.position.y, 0f);
+        yield return KitchenPassageDoor.WalkTo(player.transform, destination, 1.9f);
+        if (intoLaundry)
+            phase = Phase.Laundry;
+        inServiceAisle = false;
+        ResumeSideViewWalk(intoLaundry ? 1f : -1f);
+    }
+
+    private void ResumeSideViewWalk(float direction)
+    {
+        player.transform.rotation = Quaternion.identity;
+        motion.Face(direction);
+        Physics.SyncTransforms();
+        player.SetDoorwayWalk(false);
+        changingLane = false;
     }
 
     private void FixedUpdate()
@@ -218,7 +303,7 @@ public sealed class FreezerEscape : MonoBehaviour
 
         if (NearBrokenRelease())
         {
-            Show("Release jammed   /   The emergency lever is above the shelves", 3.2f);
+            Show("Release jammed. Emergency lever above the shelves.", 3.2f);
             return;
         }
 
@@ -372,7 +457,7 @@ public sealed class FreezerEscape : MonoBehaviour
         leverLight.color = new Color(1f, 0.74f, 0.43f);
         leverLight.intensity *= 0.55f;
         phase = Phase.DoorOpen;
-        Show("Door open   /   Back to the kitchen", 3f);
+        Show("Laundry door open", 2.2f);
         motion.EndAction();
         SetPlayerActive(true);
         leverPull = null;
@@ -391,11 +476,11 @@ public sealed class FreezerEscape : MonoBehaviour
         player.enabled = active;
     }
 
-    private void SetDoorHeight(float height)
+    private static void SetDoorHeight(Transform door, float height)
     {
-        Vector3 position = freezerDoor.position;
+        Vector3 position = door.position;
         position.y = height;
-        freezerDoor.position = position;
+        door.position = position;
     }
 
     private void Show(string message, float duration)
@@ -407,15 +492,17 @@ public sealed class FreezerEscape : MonoBehaviour
     private string Hint()
     {
         if (phase == Phase.Frozen)
-            return "TOO COLD   /   R  Try again";
+            return "Too cold   /   R  Retry";
         if (phase == Phase.Escaped)
-            return GameManager.Instance == null ? "FREEZER ESCAPED   /   R  Replay" : string.Empty;
+            return GameManager.Instance == null ? "R  Replay" : string.Empty;
+        if (changingLane || inServiceAisle || phase == Phase.Laundry)
+            return string.Empty;
         if (phase == Phase.Kitchen)
-            return body.position.x < Doorway - 6f ? "A / D  Move" : string.Empty;
+            return CanUseServiceGate() ? "E  Service passage" : string.Empty;
         if (Time.time < feedbackUntil)
             return feedback;
         if (phase == Phase.DoorOpen)
-            return "←  Back to the kitchen";
+            return string.Empty;
         if (climb != null || leverPull != null)
             return string.Empty;
         if (heldCrate != null)
@@ -446,7 +533,7 @@ public sealed class FreezerEscape : MonoBehaviour
         tint.a = Mathf.MoveTowards(tint.a, targetFrost, Time.deltaTime * 1.6f);
         frost.color = tint;
         int seconds = Mathf.CeilToInt(remaining);
-        string clock = ColdActive ? $"COLD   {seconds / 60:00}:{seconds % 60:00}" : string.Empty;
+        string clock = ColdActive ? $"{seconds / 60}:{seconds % 60:00}" : string.Empty;
         if (clockLabel.text != clock)
             clockLabel.text = clock;
         clockLabel.color = seconds <= 10 ? new Color(0.94f, 0.69f, 0.47f) : new Color(0.73f, 0.84f, 0.91f);
@@ -459,11 +546,14 @@ public sealed class FreezerEscape : MonoBehaviour
         var audio = AudioManager.Instance;
         float volume = audio == null ? 1f : audio.SfxVolume;
         bool muted = audio != null && audio.IsMuted;
-        kitchenSound.mute = freezerSound.mute = crateSound.mute = mechanismSound.mute = muted;
+        kitchenSound.mute = freezerSound.mute = crateSound.mute = mechanismSound.mute = laundrySound.mute = muted;
         mechanismSound.volume = 0.6f * volume;
-        float freezerMix = phase is Phase.Kitchen or Phase.Escaped ? 0f : 1f;
+        float freezerMix = phase == Phase.Frozen || ColdActive ? 1f : 0f;
+        float laundryMix = phase is Phase.Laundry or Phase.Escaped ? 1f :
+            inServiceAisle ? Mathf.InverseLerp(aisleEntry.position.x, aisleExit.position.x, body.position.x) : 0f;
         freezerSound.volume = Mathf.MoveTowards(freezerSound.volume, freezerMix * 0.29f * volume, Time.unscaledDeltaTime * 0.65f);
-        kitchenSound.volume = Mathf.MoveTowards(kitchenSound.volume, (1f - freezerMix) * 0.3f * volume, Time.unscaledDeltaTime * 0.85f);
+        kitchenSound.volume = Mathf.MoveTowards(kitchenSound.volume, (1f - freezerMix) * (1f - laundryMix) * 0.3f * volume, Time.unscaledDeltaTime * 0.85f);
+        laundrySound.volume = Mathf.MoveTowards(laundrySound.volume, laundryMix * 0.27f * volume, Time.unscaledDeltaTime * 0.58f);
         float slide = heldCrate != null && !body.isKinematic ? Mathf.Abs(body.linearVelocity.x) : 0f;
         crateSound.volume = Mathf.MoveTowards(crateSound.volume,
             Mathf.Clamp01(slide / crateSpeed) * 0.25f * volume, Time.unscaledDeltaTime * 2.8f);

@@ -13,6 +13,7 @@ public sealed class SideViewCamera : MonoBehaviour
     [SerializeField, Min(0.01f)] private float lookAheadTurnTime = 0.08f;
 
     [SerializeField] private Transform framingSubject;
+    [SerializeField, Range(0f, 1f)] private float depthFollow;
 
     private Camera view;
     private float baseOrthographicSize;
@@ -23,12 +24,15 @@ public sealed class SideViewCamera : MonoBehaviour
     private float lookAheadDirection = 1f;
     private float lookAheadVelocity;
     private Rigidbody targetBody;
+    private float baseDepth;
+    private float depthVelocity;
 
     private void Awake()
     {
         if (target != null)
             targetBody = target.GetComponent<Rigidbody>();
         view = GetComponent<Camera>();
+        baseDepth = transform.position.z;
         if (view == null)
             return;
         baseOrthographicSize = view.orthographicSize;
@@ -68,6 +72,9 @@ public sealed class SideViewCamera : MonoBehaviour
         Vector3 position = transform.position;
         position.x = Mathf.SmoothDamp(
             position.x, targetX, ref horizontalVelocity, smoothTime);
+        if (depthFollow > 0f)
+            position.z = Mathf.SmoothDamp(position.z, baseDepth + target.position.z * depthFollow,
+                ref depthVelocity, smoothTime);
         transform.position = position;
     }
 
