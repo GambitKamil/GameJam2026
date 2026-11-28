@@ -51,8 +51,8 @@ public sealed class BreadSupply : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.E) && IsNearTable() && TrySpendPiece())
-            motion.Eat(crumbTemplate);
+        if (Input.GetKeyDown(KeyCode.E) && TryEatAtTable())
+            return;
         if (Input.GetKeyDown(KeyCode.Q))
             TakePieceForThrow();
         if (!IsHoldingPiece || motion.Busy)
@@ -103,6 +103,15 @@ public sealed class BreadSupply : MonoBehaviour
     public bool IsNearTable()
     {
         return Mathf.Abs(player.transform.position.x - transform.position.x) <= interactionReach;
+    }
+
+    private bool TryEatAtTable()
+    {
+        if (IsHoldingPiece || !IsNearTable() || !TrySpendPiece())
+            return false;
+
+        motion.Eat(crumbTemplate);
+        return true;
     }
 
     private void TakePieceForThrow()
