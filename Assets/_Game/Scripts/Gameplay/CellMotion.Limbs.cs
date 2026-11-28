@@ -222,7 +222,7 @@ public sealed partial class CellMotion
             Vector3 aim = shoulder.InverseTransformVector(aimDirection.Value).normalized;
             if (aim.sqrMagnitude > 0.5f)
             {
-                Vector3 direction = Vector3.Slerp(requested.normalized, aim, aimWeight);
+                Vector3 direction = AimWristDirection(requested.normalized, aimDirection.Value, aimWeight);
                 requested = direction * Mathf.Lerp(requested.magnitude, ArmMaximumReach, aimWeight);
             }
         }

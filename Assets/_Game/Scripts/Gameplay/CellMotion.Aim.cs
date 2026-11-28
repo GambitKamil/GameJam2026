@@ -9,6 +9,8 @@ public sealed partial class CellMotion
     private float requestedAimAngle;
     private float aimAngle;
     private float aimBlend;
+    private bool aimWristSweepInitialized;
+    private float aimWristSweep;
 
     public void SetAim(Vector3 direction, bool active)
     {
@@ -29,6 +31,7 @@ public sealed partial class CellMotion
         aimBlend = Mathf.MoveTowards(aimBlend, aiming ? 1f : 0f, delta / aimBlendSeconds);
         if (aimBlend <= 0f)
         {
+            aimWristSweepInitialized = false;
             AlignHand();
             return;
         }
@@ -44,6 +47,26 @@ public sealed partial class CellMotion
         torso.localRotation *= Quaternion.Euler(0f, 29f * lookingBack * weight, -8f * relativeSide * weight);
         neck.localRotation *= Quaternion.Euler(0f, 50f * lookingBack * weight, 18f * direction.y * weight);
         AlignHand(direction, weight);
+    }
+
+    private Vector3 AimWristDirection(Vector3 relaxed, Vector3 aim, float weight)
+    {
+        Vector3 restDirection = shoulder.TransformVector(relaxed).normalized;
+        float restAngle = Mathf.Atan2(restDirection.y, restDirection.x) * Mathf.Rad2Deg;
+        float targetAngle = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
+        float shortestSweep = Mathf.DeltaAngle(restAngle, targetAngle);
+
+        // Keep the same side of the arc if the torso rotates through the opposite heading.
+        aimWristSweep = !aimWristSweepInitialized || weight >= 1f
+            ? shortestSweep
+            : aimWristSweep + Mathf.DeltaAngle(aimWristSweep, shortestSweep);
+        aimWristSweepInitialized = true;
+
+        float angle = (restAngle + aimWristSweep * weight) * Mathf.Deg2Rad;
+        float depth = restDirection.z * (1f - weight);
+        float planeLength = Mathf.Sqrt(Mathf.Max(0f, 1f - depth * depth));
+        Vector3 worldDirection = new Vector3(Mathf.Cos(angle) * planeLength, Mathf.Sin(angle) * planeLength, depth);
+        return shoulder.InverseTransformVector(worldDirection).normalized;
     }
 
     private float ThrowArmSide(Vector3 direction)
