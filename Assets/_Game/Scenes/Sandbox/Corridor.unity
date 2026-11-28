@@ -16616,6 +16616,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1128338435}
   - component: {fileID: 1128338436}
+  - component: {fileID: 1128338437}
   m_Layer: 0
   m_Name: Cart bay lamp
   m_TagString: Untagged
@@ -16703,6 +16704,21 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!114 &1128338437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1128338434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e6dc805dc754ee4fbbfd83171e8992d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CellLampFlicker
+  secondaryGlow: {fileID: 0}
+  minimumInterval: 3.4
+  maximumInterval: 8
 --- !u!1 &1129973112
 GameObject:
   m_ObjectHideFlags: 0
@@ -29836,6 +29852,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1903615959}
   - component: {fileID: 1903615960}
+  - component: {fileID: 1903615961}
   m_Layer: 0
   m_Name: Gate lamp
   m_TagString: Untagged
@@ -29923,6 +29940,21 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!114 &1903615961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1903615958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e6dc805dc754ee4fbbfd83171e8992d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CellLampFlicker
+  secondaryGlow: {fileID: 0}
+  minimumInterval: 2.2
+  maximumInterval: 5.5
 --- !u!1 &1918286407
 GameObject:
   m_ObjectHideFlags: 0
