@@ -58,6 +58,7 @@ public sealed class CellEscape : MonoBehaviour
         gateLock = gate.Find("Lock Plate");
         mouseHome = mouse.position;
         motion = player.GetComponent<CellMotion>();
+        motion.SetGateBlocker(gate.GetComponent<BoxCollider>());
         mouseMotion = new CellMouseMotion(mouse, mouseStrideLength, mouseStepHeight, mouseTurnTime, mouseTailResponse);
         nextWander = Time.time + Random.Range(0.45f, 1.2f);
         clang = MakeSound("Key clang", 0.38f, 840f, 1417f);
