@@ -1,0 +1,470 @@
+===== Phase2Baseline =====
+Scene: 684 enabled renderers, missing scripts=0, missing materials/shaders=0
+Player visual: 7 immediate children, 1 skinned renderers. Rat: 17 skin bones, readable mesh=True, vertices=1469
+Rat bone Rat Spine: (0.000, 0.000, 0.000)
+Rat bone Rat Head Joint: (0.180, 0.143, -0.010)
+Rat bone Rat Tail Joint: (-0.314, 0.061, 0.010)
+Rat bone Rat Tail Middle: (-0.370, 0.023, 0.000)
+Rat bone Rat Tail Tip: (-0.428, 0.010, 0.000)
+Rat bone Front Left Paw Hip: (0.079, 0.134, -0.062)
+Rat bone Front Left Paw Knee: (0.045, 0.067, -0.078)
+Rat bone Front Left Paw: (0.099, 0.007, -0.092)
+Rat bone Front Right Paw Hip: (0.079, 0.134, 0.062)
+Rat bone Front Right Paw Knee: (0.045, 0.067, 0.078)
+Rat bone Front Right Paw: (0.099, 0.007, 0.092)
+Rat bone Rear Left Paw Hip: (-0.139, 0.133, -0.062)
+Rat bone Rear Left Paw Knee: (-0.087, 0.069, -0.078)
+Rat bone Rear Left Paw: (-0.138, 0.006, -0.089)
+Rat bone Rear Right Paw Hip: (-0.139, 0.133, 0.062)
+Rat bone Rear Right Paw Knee: (-0.087, 0.069, 0.078)
+Rat bone Rear Right Paw: (-0.138, 0.006, 0.089)
+Composition aspect: 1.7778.
+Key support: Cell Walking Surface at Y=0.0000 m
+At bed: position=(-7.3556, 5.5126, -15.5796), size=1.9920, left=-7.6327, right=-0.3860.
+Wake: maximum consecutive figure displacement=0.0420 m at 60 Hz, input root drift=0.0000 m
+Step 1: FindBread at 2.50s
+PASS: eating leaves the held bread and remaining portion count intact
+Step 2: FindBread at 6.22s
+PASS: Aim right/up: steady-state arm/forearm error=0.02 degrees, settle=0.150s, maximum forearm step=25.06 degrees
+PASS: Aim left/up: steady-state arm/forearm error=0.00 degrees, settle=0.083s, maximum forearm step=24.01 degrees
+PASS: Aim release: blend-out=0.167s, maximum forearm step=9.81 degrees
+Bread: found interception with launch angle 25 degrees.
+Step 3: FindBread at 7.25s
+PASS: Key resting tilt: 0.00 degrees
+Step 4: KeyBehindGate at 10.42s
+Step 5: KeyBehindGate at 11.25s
+Step 6: KeyBehindGate at 13.80s
+Step 7: KeyWithinReach at 16.70s
+Step 8: GateOpen at 22.13s
+Step 9: Complete at 23.62s
+Restart stage: FindBread
+Run: 1419 observed frames at 60 Hz, gameplay warnings/errors=0, known editor startup exceptions=0, max sleeve length change=0.0 %, idle foot gap=0.013 m, idle floor penetration=0.000 m
+PASS: puzzle sequence and restart
+PASS: Grate: physical stop x=-0.7930, standing approach overlap=0.0000 m (-), crouched overlap=0.0000 m (-), closed-gate interaction overlap=0.0000 m (-)
+Composition: closed left/right=-3.7466/3.3107, open left/right=-3.7466/3.3107, extra right=0.00% of closed width.
+Boot and rod overlap: 0.11950 m at 2.400s; rod travel during wake=0.000000 m; initial rod position=(-5.250000, 0.110000, 0.560000), rotation=(0.000000, -0.414693, 0.000000, 0.909961), scale=(3.780000, 1.000000, 1.000000).
+Frame wall time: 12.644 ms mean, 79.09 FPS, 1172 uncapped editor frames, excluding direct capture frames.
+PASS: Key floor clearance: drop=-0.0003 m, settled and dragged=0.0000 m, lowest pivot=(2.356, 0.202, 1.826)
+PASS: Gameplay warnings/errors: 0
+PASS: Player segment length drift: arm=0.000 %, legs=0.000 %, arm samples=1418, leg samples=1418/1418
+PASS: Wake: hip step=0.0269 m, stand seam=0.0006 m, boot penetration=0.0000 m
+General motion: max camera step=0.3313 m, max grip-to-target gap at >=95% reach weight=0.7695 m (KeyBehindGate at 14.983s, shoulder=(-1.120, 0.815, -0.166), wrist=(-0.786, 0.583, 0.007), target=(-0.205, 0.178, 0.309))
+PASS: Player support: 1268 grounded, 0 airborne, 0 grounded without a boot inside 20 mm of support
+PASS: Player near boot: planted=1039, swing=229, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Player far boot: planted=1038, swing=230, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Mouse gait: first diagonal=107 frames, second diagonal=85 frames, airborne=53 frames
+PASS: Mouse paw 0: planted=452, swing=148, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 0 peaks: gap 0.0000 m at 1.133s, sole=(0.191, 0.000, 0.565), slip at 5.850s, (1.756, 0.000, 0.592) to (1.756, 0.000, 0.592), skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 1: planted=430, swing=170, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 1 peaks: gap 0.0000 m at 1.233s, sole=(0.246, 0.000, 0.389), slip at 5.517s, (0.968, 0.000, 0.677) to (0.968, 0.000, 0.677), skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 2: planted=429, swing=171, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 2 peaks: gap 0.0000 m at 0.633s, sole=(0.730, 0.000, 0.783), slip at 9.033s, (2.775, 0.000, 1.580) to (2.775, 0.000, 1.580), skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 3: planted=452, swing=148, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 3 peaks: gap 0.0000 m at 1.150s, sole=(0.480, 0.000, 0.498), slip at 6.100s, (1.650, 0.000, 0.761) to (1.650, 0.000, 0.761), skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse tail: peak base=28.82 degrees, peak tip=12.33 degrees, lag=0.133s, correlation=0.98
+PASS: motion checks
+
+===== Phase2Release169 =====
+Scene: 725 enabled renderers, missing scripts=0, missing materials/shaders=0
+Build: Succeeded, errors=0, warnings=3
+Player visual: 7 immediate children, 1 skinned renderers. Rat: 17 skin bones, readable mesh=True, vertices=1469
+Rat bone Rat Spine: (0.000, 0.000, 0.000)
+Rat bone Rat Head Joint: (0.180, 0.143, -0.010)
+Rat bone Rat Tail Joint: (-0.314, 0.061, 0.010)
+Rat bone Rat Tail Middle: (-0.370, 0.023, 0.000)
+Rat bone Rat Tail Tip: (-0.428, 0.010, 0.000)
+Rat bone Front Left Paw Hip: (0.079, 0.134, -0.062)
+Rat bone Front Left Paw Knee: (0.045, 0.067, -0.078)
+Rat bone Front Left Paw: (0.099, 0.007, -0.092)
+Rat bone Front Right Paw Hip: (0.079, 0.134, 0.062)
+Rat bone Front Right Paw Knee: (0.045, 0.067, 0.078)
+Rat bone Front Right Paw: (0.099, 0.007, 0.092)
+Rat bone Rear Left Paw Hip: (-0.139, 0.133, -0.062)
+Rat bone Rear Left Paw Knee: (-0.087, 0.069, -0.078)
+Rat bone Rear Left Paw: (-0.138, 0.006, -0.089)
+Rat bone Rear Right Paw Hip: (-0.139, 0.133, 0.062)
+Rat bone Rear Right Paw Knee: (-0.087, 0.069, 0.078)
+Rat bone Rear Right Paw: (-0.138, 0.006, 0.089)
+Composition aspect: 1.7778, moving reveal=False.
+Key support: Cell Walking Surface at Y=0.0000 m
+At bed: position=(-6.8290, 5.5126, -15.5796), size=2.0492, left=-7.2100, right=0.2445.
+SHOT 1 viewport anchors: hero=(0.090, 0.377, 17.167), bars=(0.943, 0.372, 16.597), rod=(0.247, 0.117, 16.920), key=(1.236, 0.652, 19.405) (active=True).
+Wake: maximum consecutive figure displacement=0.0420 m at 60 Hz, input root drift=0.0000 m
+Step 1: FindBread at 2.50s
+PASS: eating leaves the held bread and remaining portion count intact
+Step 2: FindBread at 6.22s
+PASS: Aim right/up: steady-state arm/forearm error=0.02 degrees, settle=0.150s, maximum forearm step=25.06 degrees
+PASS: Aim left/up: steady-state arm/forearm error=0.00 degrees, settle=0.083s, maximum forearm step=24.01 degrees
+PASS: Aim release: blend-out=0.167s, maximum forearm step=9.81 degrees
+Key before bread table: viewport=(1.0660, 0.6423, 19.1004), actor X=-3.2811, active=True, inside margins=False.
+Key before throw: viewport=(0.8302, 0.6216, 18.7603), actor X=-1.1278, active=True, inside margins=True.
+PASS: The hanging key was visible from a reachable throwing position.
+Bread: found interception with launch angle 17 degrees, cursor viewport=(0.5222, 0.4793, 16.4230).
+PASS: The successful bread direction is reachable by an on-screen cursor.
+Step 3: FindBread at 8.60s
+PASS: Key resting tilt: 0.00 degrees
+Key beat viewport anchors: hero=(0.100, 0.434, 15.561), bars=(0.179, 0.353, 15.240), rod=(-0.319, 0.170, 15.563), key=(0.386, 0.271, 18.345) (active=True).
+Step 4: KeyBehindGate at 11.50s
+Step 5: KeyBehindGate at 12.95s
+Step 6: KeyBehindGate at 15.50s
+Key before gate interaction: viewport=(0.4004, 0.0690, 16.8218), actor X=-1.0769, active=True, inside margins=True.
+Step 7: KeyWithinReach at 18.38s
+SHOT 2 viewport anchors: hero=(0.355, 0.447, 16.177), bars=(0.450, 0.339, 15.842), rod=(0.206, 0.060, 15.800), key=(0.310, 0.181, 16.135) (active=False).
+Step 8: GateOpen at 23.82s
+Step 9: Complete at 25.30s
+Composition reset: left/right drift=0.0000/0.0000 m at the matching bed beat; aspect=1.7778.
+PASS: Restart restored the original bed framing.
+Restart stage: FindBread
+Run: 1526 observed frames at 60 Hz, gameplay warnings/errors=0, known editor startup exceptions=0, max sleeve length change=0.0 %, idle foot gap=0.182 m, idle floor penetration=0.000 m
+PASS: puzzle sequence and restart
+PASS: Grate: physical stop x=-0.7930, standing approach overlap=0.0000 m (-), crouched overlap=0.0000 m (-), closed-gate interaction overlap=0.0000 m (-)
+Composition: closed left/right=-3.7596/3.2977, open left/right=-3.7596/4.1799, extra right=12.50% of closed width.
+Reveal motion: max right step=0.0259 m/frame, peak second difference=0.0020 m/frame squared, first frame step=0.0010 m, reverse step=0.0000 m; camera intersected level=False.
+Boot and rod overlap: 0.00000 m at 0.000s; rod wake travel=0.000000 m, rotation change=0.00000 degrees, scale change=0.000000; initial rod position=(-5.250000, 0.110000, 0.560000), rotation=(0.000000, -0.414693, 0.000000, 0.909961), scale=(3.780000, 1.000000, 1.000000).
+Wake floor: max consecutive near-floor horizontal boot step=0.00333 m; max floor penetration=0.00000 m.
+PASS: Gate revealed 12.50% of the closed width to the right.
+PASS: Gate reveal began smoothly and camera remained clear of colliders.
+PASS: Bed-exit boots cleared the unchanged rod.
+Frame wall time: 12.725 ms mean, 78.58 FPS, 1272 uncapped editor frames, excluding direct capture frames.
+PASS: Key floor clearance: drop=-0.0003 m, settled and dragged=0.0000 m, lowest pivot=(2.356, 0.202, 1.826)
+PASS: Gameplay warnings/errors: 0
+PASS: Player segment length drift: arm=0.000 %, legs=0.000 %, arm samples=1519, leg samples=1519/1519
+PASS: Wake: hip step=0.0269 m, stand seam=0.0005 m, boot penetration=0.0000 m
+General motion: max camera step=0.2424 m (from (-1.8076, 5.5126, -15.5796) to (-2.0500, 5.5126, -15.5796) in phase 4, KeyBehindGate at 11.667s), max grip-to-target gap at >=95% reach weight=0.7683 m (KeyBehindGate at 16.700s, shoulder=(-1.119, 0.813, -0.166), wrist=(-0.786, 0.581, 0.007), target=(-0.205, 0.178, 0.309))
+PASS: Player support: 1369 grounded, 0 airborne, 0 grounded without a boot inside 20 mm of support
+PASS: Player near boot: planted=1080, swing=289, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Player far boot: planted=1089, swing=280, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Mouse gait: first diagonal=103 frames, second diagonal=71 frames, airborne=49 frames
+PASS: Mouse paw 0: planted=534, swing=131, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 0 peaks: gap 0.0000 m at 1.233s, sole=(0.348, 0.000, 0.735) in phase 0, FindBread, slip at 5.000s, (1.184, 0.000, 0.425) to (1.184, 0.000, 0.425) in phase 1, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 1: planted=502, swing=163, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 1 peaks: gap 0.0000 m at 1.300s, sole=(0.287, 0.000, 0.550) in phase 0, FindBread, slip at 10.183s, (3.105, 0.000, 1.525) to (3.105, 0.000, 1.525) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 2: planted=503, swing=162, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 2 peaks: gap 0.0000 m at 1.517s, sole=(0.461, 0.000, 0.742) in phase 0, FindBread, slip at 10.000s, (2.809, 0.000, 1.552) to (2.809, 0.000, 1.552) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 3: planted=533, swing=132, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 3 peaks: gap 0.0000 m at 1.783s, sole=(0.446, 0.000, 0.563) in phase 0, FindBread, slip at 5.133s, (1.115, 0.000, 0.609) to (1.115, 0.000, 0.609) in phase 1, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse tail: peak base=28.83 degrees, peak tip=12.48 degrees, lag=0.133s, correlation=0.97
+PASS: motion checks
+
+===== Phase2Release1610 =====
+Scene: 725 enabled renderers, missing scripts=0, missing materials/shaders=0
+Player visual: 7 immediate children, 1 skinned renderers. Rat: 17 skin bones, readable mesh=True, vertices=1469
+Rat bone Rat Spine: (0.000, 0.000, 0.000)
+Rat bone Rat Head Joint: (0.180, 0.143, -0.010)
+Rat bone Rat Tail Joint: (-0.314, 0.061, 0.010)
+Rat bone Rat Tail Middle: (-0.370, 0.023, 0.000)
+Rat bone Rat Tail Tip: (-0.428, 0.010, 0.000)
+Rat bone Front Left Paw Hip: (0.079, 0.134, -0.062)
+Rat bone Front Left Paw Knee: (0.045, 0.067, -0.078)
+Rat bone Front Left Paw: (0.099, 0.007, -0.092)
+Rat bone Front Right Paw Hip: (0.079, 0.134, 0.062)
+Rat bone Front Right Paw Knee: (0.045, 0.067, 0.078)
+Rat bone Front Right Paw: (0.099, 0.007, 0.092)
+Rat bone Rear Left Paw Hip: (-0.139, 0.133, -0.062)
+Rat bone Rear Left Paw Knee: (-0.087, 0.069, -0.078)
+Rat bone Rear Left Paw: (-0.138, 0.006, -0.089)
+Rat bone Rear Right Paw Hip: (-0.139, 0.133, 0.062)
+Rat bone Rear Right Paw Knee: (-0.087, 0.069, 0.078)
+Rat bone Rear Right Paw: (-0.138, 0.006, 0.089)
+Composition aspect: 1.6000, moving reveal=False.
+Key support: Cell Walking Surface at Y=0.0000 m
+At bed: position=(-6.8290, 5.5126, -15.5796), size=2.2769, left=-7.2100, right=0.2445.
+SHOT 1 viewport anchors: hero=(0.090, 0.389, 17.167), bars=(0.943, 0.385, 16.597), rod=(0.247, 0.155, 16.920), key=(1.236, 0.637, 19.405) (active=True).
+Wake: maximum consecutive figure displacement=0.0420 m at 60 Hz, input root drift=0.0000 m
+Step 1: FindBread at 2.50s
+PASS: eating leaves the held bread and remaining portion count intact
+Step 2: FindBread at 6.22s
+PASS: Aim right/up: steady-state arm/forearm error=0.02 degrees, settle=0.150s, maximum forearm step=25.06 degrees
+PASS: Aim left/up: steady-state arm/forearm error=0.00 degrees, settle=0.083s, maximum forearm step=24.01 degrees
+PASS: Aim release: blend-out=0.167s, maximum forearm step=9.81 degrees
+Key before bread table: viewport=(1.0855, 0.6296, 19.1286), actor X=-3.2811, active=True, inside margins=False.
+Key before throw: viewport=(0.8302, 0.6095, 18.7603), actor X=-1.1278, active=True, inside margins=True.
+PASS: The hanging key was visible from a reachable throwing position.
+Bread: found interception with launch angle 17 degrees, cursor viewport=(0.5222, 0.4815, 16.4230).
+PASS: The successful bread direction is reachable by an on-screen cursor.
+Step 3: FindBread at 8.60s
+PASS: Key resting tilt: 0.00 degrees
+Key beat viewport anchors: hero=(0.100, 0.441, 15.561), bars=(0.179, 0.367, 15.240), rod=(-0.319, 0.203, 15.563), key=(0.386, 0.294, 18.345) (active=True).
+Step 4: KeyBehindGate at 11.50s
+Step 5: KeyBehindGate at 12.95s
+Step 6: KeyBehindGate at 15.50s
+Key before gate interaction: viewport=(0.4004, 0.1121, 16.8218), actor X=-1.0769, active=True, inside margins=True.
+Step 7: KeyWithinReach at 18.38s
+SHOT 2 viewport anchors: hero=(0.355, 0.453, 16.177), bars=(0.450, 0.355, 15.842), rod=(0.206, 0.104, 15.800), key=(0.310, 0.213, 16.135) (active=False).
+Step 8: GateOpen at 23.82s
+Step 9: Complete at 25.30s
+Composition reset: left/right drift=0.0000/0.0000 m at the matching bed beat; aspect=1.6000.
+PASS: Restart restored the original bed framing.
+Restart stage: FindBread
+Run: 1526 observed frames at 60 Hz, gameplay warnings/errors=0, known editor startup exceptions=0, max sleeve length change=0.0 %, idle foot gap=0.182 m, idle floor penetration=0.000 m
+PASS: puzzle sequence and restart
+PASS: Grate: physical stop x=-0.7930, standing approach overlap=0.0000 m (-), crouched overlap=0.0000 m (-), closed-gate interaction overlap=0.0000 m (-)
+Composition: closed left/right=-3.7596/3.2977, open left/right=-3.7596/4.1799, extra right=12.50% of closed width.
+Reveal motion: max right step=0.0259 m/frame, peak second difference=0.0020 m/frame squared, first frame step=0.0010 m, reverse step=0.0000 m; camera intersected level=False.
+Boot and rod overlap: 0.00000 m at 0.000s; rod wake travel=0.000000 m, rotation change=0.00000 degrees, scale change=0.000000; initial rod position=(-5.250000, 0.110000, 0.560000), rotation=(0.000000, -0.414693, 0.000000, 0.909961), scale=(3.780000, 1.000000, 1.000000).
+Wake floor: max consecutive near-floor horizontal boot step=0.00333 m; max floor penetration=0.00000 m.
+PASS: Gate revealed 12.50% of the closed width to the right.
+PASS: Gate reveal began smoothly and camera remained clear of colliders.
+PASS: Bed-exit boots cleared the unchanged rod.
+Frame wall time: 12.700 ms mean, 78.74 FPS, 1272 uncapped editor frames, excluding direct capture frames.
+PASS: Key floor clearance: drop=-0.0003 m, settled and dragged=0.0000 m, lowest pivot=(2.356, 0.202, 1.826)
+PASS: Gameplay warnings/errors: 0
+PASS: Player segment length drift: arm=0.000 %, legs=0.000 %, arm samples=1519, leg samples=1519/1519
+PASS: Wake: hip step=0.0269 m, stand seam=0.0005 m, boot penetration=0.0000 m
+General motion: max camera step=0.2424 m (from (-1.8076, 5.5126, -15.5796) to (-2.0500, 5.5126, -15.5796) in phase 4, KeyBehindGate at 11.667s), max grip-to-target gap at >=95% reach weight=0.7683 m (KeyBehindGate at 16.700s, shoulder=(-1.119, 0.813, -0.166), wrist=(-0.786, 0.581, 0.007), target=(-0.205, 0.178, 0.309))
+PASS: Player support: 1369 grounded, 0 airborne, 0 grounded without a boot inside 20 mm of support
+PASS: Player near boot: planted=1080, swing=289, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Player far boot: planted=1089, swing=280, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Mouse gait: first diagonal=108 frames, second diagonal=85 frames, airborne=49 frames
+PASS: Mouse paw 0: planted=520, swing=145, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 0 peaks: gap 0.0000 m at 1.050s, sole=(0.325, 0.000, 0.690) in phase 0, FindBread, slip at 5.517s, (1.068, 0.000, 0.381) to (1.068, 0.000, 0.381) in phase 1, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 1: planted=497, swing=168, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 1 peaks: gap 0.0000 m at 1.083s, sole=(0.287, 0.000, 0.495) in phase 0, FindBread, slip at 10.350s, (3.133, 0.000, 1.577) to (3.133, 0.000, 1.577) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 2: planted=495, swing=170, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 2 peaks: gap 0.0000 m at 1.433s, sole=(0.469, 0.000, 0.719) in phase 0, FindBread, slip at 10.400s, (2.973, 0.000, 1.483) to (2.973, 0.000, 1.483) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 3: planted=521, swing=144, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 3 peaks: gap 0.0000 m at 0.900s, sole=(0.779, 0.000, 0.613) in phase 0, FindBread, slip at 5.850s, (1.047, 0.000, 0.567) to (1.047, 0.000, 0.567) in phase 1, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse tail: peak base=28.45 degrees, peak tip=11.53 degrees, lag=0.133s, correlation=0.97
+PASS: motion checks
+
+===== Phase2Release219 =====
+Scene: 725 enabled renderers, missing scripts=0, missing materials/shaders=0
+Player visual: 7 immediate children, 1 skinned renderers. Rat: 17 skin bones, readable mesh=True, vertices=1469
+Rat bone Rat Spine: (0.000, 0.000, 0.000)
+Rat bone Rat Head Joint: (0.180, 0.143, -0.010)
+Rat bone Rat Tail Joint: (-0.314, 0.061, 0.010)
+Rat bone Rat Tail Middle: (-0.370, 0.023, 0.000)
+Rat bone Rat Tail Tip: (-0.428, 0.010, 0.000)
+Rat bone Front Left Paw Hip: (0.079, 0.134, -0.062)
+Rat bone Front Left Paw Knee: (0.045, 0.067, -0.078)
+Rat bone Front Left Paw: (0.099, 0.007, -0.092)
+Rat bone Front Right Paw Hip: (0.079, 0.134, 0.062)
+Rat bone Front Right Paw Knee: (0.045, 0.067, 0.078)
+Rat bone Front Right Paw: (0.099, 0.007, 0.092)
+Rat bone Rear Left Paw Hip: (-0.139, 0.133, -0.062)
+Rat bone Rear Left Paw Knee: (-0.087, 0.069, -0.078)
+Rat bone Rear Left Paw: (-0.138, 0.006, -0.089)
+Rat bone Rear Right Paw Hip: (-0.139, 0.133, 0.062)
+Rat bone Rear Right Paw Knee: (-0.087, 0.069, 0.078)
+Rat bone Rear Right Paw: (-0.138, 0.006, 0.089)
+Composition aspect: 2.3333, moving reveal=False.
+Key support: Cell Walking Surface at Y=0.0000 m
+At bed: position=(-6.8290, 5.1236, -15.5796), size=1.5613, left=-7.2100, right=0.2445.
+SHOT 1 viewport anchors: hero=(0.090, 0.460, 17.078), bars=(0.943, 0.453, 16.508), rod=(0.247, 0.119, 16.831), key=(1.236, 0.821, 19.316) (active=True).
+Wake: maximum consecutive figure displacement=0.0420 m at 60 Hz, input root drift=0.0000 m
+Step 1: FindBread at 2.50s
+PASS: eating leaves the held bread and remaining portion count intact
+Step 2: FindBread at 6.22s
+PASS: Aim right/up: steady-state arm/forearm error=0.02 degrees, settle=0.150s, maximum forearm step=25.06 degrees
+PASS: Aim left/up: steady-state arm/forearm error=0.00 degrees, settle=0.083s, maximum forearm step=24.01 degrees
+PASS: Aim release: blend-out=0.167s, maximum forearm step=9.81 degrees
+Key before bread table: viewport=(1.1256, 0.8498, 19.0777), actor X=-3.2811, active=True, inside margins=False.
+Key before throw: viewport=(0.8302, 0.8159, 18.6517), actor X=-1.1278, active=True, inside margins=True.
+PASS: The hanging key was visible from a reachable throwing position.
+Bread: found interception with launch angle 17 degrees, cursor viewport=(0.5223, 0.6291, 16.3143).
+PASS: The successful bread direction is reachable by an on-screen cursor.
+Step 3: FindBread at 8.60s
+PASS: Key resting tilt: 0.00 degrees
+Key beat viewport anchors: hero=(0.100, 0.416, 15.559), bars=(0.179, 0.308, 15.238), rod=(-0.319, 0.069, 15.561), key=(0.386, 0.201, 18.343) (active=True).
+Step 4: KeyBehindGate at 11.50s
+Step 5: KeyBehindGate at 12.95s
+Step 6: KeyBehindGate at 15.50s
+Key before gate interaction: viewport=(0.4004, 0.0905, 16.7132), actor X=-1.0769, active=True, inside margins=True.
+Step 7: KeyWithinReach at 18.38s
+SHOT 2 viewport anchors: hero=(0.355, 0.570, 16.068), bars=(0.450, 0.428, 15.733), rod=(0.206, 0.061, 15.692), key=(0.310, 0.220, 16.027) (active=False).
+Step 8: GateOpen at 23.82s
+Step 9: Complete at 25.30s
+Composition reset: left/right drift=0.0000/0.0000 m at the matching bed beat; aspect=2.3333.
+PASS: Restart restored the original bed framing.
+Restart stage: FindBread
+Run: 1526 observed frames at 60 Hz, gameplay warnings/errors=0, known editor startup exceptions=0, max sleeve length change=0.0 %, idle foot gap=0.182 m, idle floor penetration=0.000 m
+PASS: puzzle sequence and restart
+PASS: Grate: physical stop x=-0.7930, standing approach overlap=0.0000 m (-), crouched overlap=0.0000 m (-), closed-gate interaction overlap=0.0000 m (-)
+Composition: closed left/right=-3.7596/3.2977, open left/right=-3.7596/4.1799, extra right=12.50% of closed width.
+Reveal motion: max right step=0.0259 m/frame, peak second difference=0.0020 m/frame squared, first frame step=0.0010 m, reverse step=0.0000 m; camera intersected level=False.
+Boot and rod overlap: 0.00000 m at 0.000s; rod wake travel=0.000000 m, rotation change=0.00000 degrees, scale change=0.000000; initial rod position=(-5.250000, 0.110000, 0.560000), rotation=(0.000000, -0.414693, 0.000000, 0.909961), scale=(3.780000, 1.000000, 1.000000).
+Wake floor: max consecutive near-floor horizontal boot step=0.00333 m; max floor penetration=0.00000 m.
+PASS: Gate revealed 12.50% of the closed width to the right.
+PASS: Gate reveal began smoothly and camera remained clear of colliders.
+PASS: Bed-exit boots cleared the unchanged rod.
+Frame wall time: 12.485 ms mean, 80.09 FPS, 1272 uncapped editor frames, excluding direct capture frames.
+PASS: Key floor clearance: drop=-0.0003 m, settled and dragged=0.0000 m, lowest pivot=(2.356, 0.202, 1.826)
+PASS: Gameplay warnings/errors: 0
+PASS: Player segment length drift: arm=0.000 %, legs=0.000 %, arm samples=1519, leg samples=1519/1519
+PASS: Wake: hip step=0.0269 m, stand seam=0.0005 m, boot penetration=0.0000 m
+General motion: max camera step=0.2434 m (from (-1.8076, 5.3196, -15.5796) to (-2.0500, 5.2975, -15.5796) in phase 4, KeyBehindGate at 11.667s), max grip-to-target gap at >=95% reach weight=0.7683 m (KeyBehindGate at 16.700s, shoulder=(-1.119, 0.813, -0.166), wrist=(-0.786, 0.581, 0.007), target=(-0.205, 0.178, 0.309))
+PASS: Player support: 1369 grounded, 0 airborne, 0 grounded without a boot inside 20 mm of support
+PASS: Player near boot: planted=1080, swing=289, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Player far boot: planted=1089, swing=280, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Mouse gait: first diagonal=79 frames, second diagonal=77 frames, airborne=49 frames
+PASS: Mouse paw 0: planted=527, swing=138, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 0 peaks: gap 0.0000 m at 0.767s, sole=(0.205, 0.000, 0.541) in phase 0, FindBread, slip at 2.583s, (0.387, 0.000, 0.629) to (0.387, 0.000, 0.629) in phase 1, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 1: planted=525, swing=140, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 1 peaks: gap 0.0000 m at 1.117s, sole=(0.232, 0.000, 0.347) in phase 0, FindBread, slip at 2.433s, (0.218, 0.000, 0.652) to (0.218, 0.000, 0.652) in phase 0, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 2: planted=525, swing=140, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 2 peaks: gap 0.0000 m at 0.933s, sole=(0.356, 0.000, 0.618) in phase 0, FindBread, slip at 9.867s, (2.756, 0.000, 1.595) to (2.756, 0.000, 1.595) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 3: planted=527, swing=138, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 3 peaks: gap 0.0000 m at 2.467s, sole=(0.257, 0.000, 0.347) in phase 0, FindBread, slip at 2.583s, (0.257, 0.000, 0.347) to (0.257, 0.000, 0.347) in phase 1, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse tail: peak base=29.13 degrees, peak tip=12.63 degrees, lag=0.133s, correlation=0.98
+PASS: motion checks
+
+===== Phase2Release43 =====
+Scene: 725 enabled renderers, missing scripts=0, missing materials/shaders=0
+Player visual: 7 immediate children, 1 skinned renderers. Rat: 17 skin bones, readable mesh=True, vertices=1469
+Rat bone Rat Spine: (0.000, 0.000, 0.000)
+Rat bone Rat Head Joint: (0.180, 0.143, -0.010)
+Rat bone Rat Tail Joint: (-0.314, 0.061, 0.010)
+Rat bone Rat Tail Middle: (-0.370, 0.023, 0.000)
+Rat bone Rat Tail Tip: (-0.428, 0.010, 0.000)
+Rat bone Front Left Paw Hip: (0.079, 0.134, -0.062)
+Rat bone Front Left Paw Knee: (0.045, 0.067, -0.078)
+Rat bone Front Left Paw: (0.099, 0.007, -0.092)
+Rat bone Front Right Paw Hip: (0.079, 0.134, 0.062)
+Rat bone Front Right Paw Knee: (0.045, 0.067, 0.078)
+Rat bone Front Right Paw: (0.099, 0.007, 0.092)
+Rat bone Rear Left Paw Hip: (-0.139, 0.133, -0.062)
+Rat bone Rear Left Paw Knee: (-0.087, 0.069, -0.078)
+Rat bone Rear Left Paw: (-0.138, 0.006, -0.089)
+Rat bone Rear Right Paw Hip: (-0.139, 0.133, 0.062)
+Rat bone Rear Right Paw Knee: (-0.087, 0.069, 0.078)
+Rat bone Rear Right Paw: (-0.138, 0.006, 0.089)
+Composition aspect: 1.3333, moving reveal=False.
+Key support: Cell Walking Surface at Y=0.0000 m
+At bed: position=(-6.8290, 5.5126, -15.5796), size=2.7322, left=-7.2100, right=0.2445.
+SHOT 1 viewport anchors: hero=(0.090, 0.408, 17.167), bars=(0.943, 0.404, 16.597), rod=(0.247, 0.213, 16.920), key=(1.236, 0.614, 19.405) (active=True).
+Wake: maximum consecutive figure displacement=0.0420 m at 60 Hz, input root drift=0.0000 m
+Step 1: FindBread at 2.50s
+PASS: eating leaves the held bread and remaining portion count intact
+Step 2: FindBread at 6.22s
+PASS: Aim right/up: steady-state arm/forearm error=0.02 degrees, settle=0.150s, maximum forearm step=25.06 degrees
+PASS: Aim left/up: steady-state arm/forearm error=0.00 degrees, settle=0.083s, maximum forearm step=24.01 degrees
+PASS: Aim release: blend-out=0.167s, maximum forearm step=9.81 degrees
+Key before bread table: viewport=(1.0673, 0.6069, 19.1023), actor X=-3.2811, active=True, inside margins=False.
+Key before throw: viewport=(0.8302, 0.5913, 18.7603), actor X=-1.1278, active=True, inside margins=True.
+PASS: The hanging key was visible from a reachable throwing position.
+Bread: found interception with launch angle 17 degrees, cursor viewport=(0.5223, 0.4846, 16.4230).
+PASS: The successful bread direction is reachable by an on-screen cursor.
+Step 3: FindBread at 8.60s
+PASS: Key resting tilt: 0.00 degrees
+Key beat viewport anchors: hero=(0.100, 0.451, 15.561), bars=(0.179, 0.390, 15.240), rod=(-0.319, 0.253, 15.563), key=(0.386, 0.328, 18.345) (active=True).
+Step 4: KeyBehindGate at 11.50s
+Step 5: KeyBehindGate at 12.95s
+Step 6: KeyBehindGate at 15.50s
+Key before gate interaction: viewport=(0.4004, 0.1769, 16.8218), actor X=-1.0769, active=True, inside margins=True.
+Step 7: KeyWithinReach at 18.38s
+SHOT 2 viewport anchors: hero=(0.355, 0.461, 16.177), bars=(0.450, 0.379, 15.842), rod=(0.206, 0.170, 15.800), key=(0.310, 0.261, 16.135) (active=False).
+Step 8: GateOpen at 23.82s
+Step 9: Complete at 25.30s
+Composition reset: left/right drift=0.0000/0.0000 m at the matching bed beat; aspect=1.3333.
+PASS: Restart restored the original bed framing.
+Restart stage: FindBread
+Run: 1526 observed frames at 60 Hz, gameplay warnings/errors=0, known editor startup exceptions=0, max sleeve length change=0.0 %, idle foot gap=0.182 m, idle floor penetration=0.000 m
+PASS: puzzle sequence and restart
+PASS: Grate: physical stop x=-0.7930, standing approach overlap=0.0000 m (-), crouched overlap=0.0000 m (-), closed-gate interaction overlap=0.0000 m (-)
+Composition: closed left/right=-3.7596/3.2977, open left/right=-3.7596/4.1799, extra right=12.50% of closed width.
+Reveal motion: max right step=0.0259 m/frame, peak second difference=0.0020 m/frame squared, first frame step=0.0010 m, reverse step=0.0000 m; camera intersected level=False.
+Boot and rod overlap: 0.00000 m at 0.000s; rod wake travel=0.000000 m, rotation change=0.00000 degrees, scale change=0.000000; initial rod position=(-5.250000, 0.110000, 0.560000), rotation=(0.000000, -0.414693, 0.000000, 0.909961), scale=(3.780000, 1.000000, 1.000000).
+Wake floor: max consecutive near-floor horizontal boot step=0.00333 m; max floor penetration=0.00000 m.
+PASS: Gate revealed 12.50% of the closed width to the right.
+PASS: Gate reveal began smoothly and camera remained clear of colliders.
+PASS: Bed-exit boots cleared the unchanged rod.
+Frame wall time: 12.412 ms mean, 80.57 FPS, 1272 uncapped editor frames, excluding direct capture frames.
+PASS: Key floor clearance: drop=-0.0003 m, settled and dragged=0.0000 m, lowest pivot=(2.356, 0.202, 1.826)
+PASS: Gameplay warnings/errors: 0
+PASS: Player segment length drift: arm=0.000 %, legs=0.000 %, arm samples=1519, leg samples=1519/1519
+PASS: Wake: hip step=0.0269 m, stand seam=0.0005 m, boot penetration=0.0000 m
+General motion: max camera step=0.2424 m (from (-1.8076, 5.5126, -15.5796) to (-2.0500, 5.5126, -15.5796) in phase 4, KeyBehindGate at 11.667s), max grip-to-target gap at >=95% reach weight=0.7683 m (KeyBehindGate at 16.700s, shoulder=(-1.119, 0.813, -0.166), wrist=(-0.786, 0.581, 0.007), target=(-0.205, 0.178, 0.309))
+PASS: Player support: 1369 grounded, 0 airborne, 0 grounded without a boot inside 20 mm of support
+PASS: Player near boot: planted=1080, swing=289, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Player far boot: planted=1089, swing=280, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Mouse gait: first diagonal=126 frames, second diagonal=117 frames, airborne=49 frames
+PASS: Mouse paw 0: planted=486, swing=179, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 0 peaks: gap 0.0000 m at 0.533s, sole=(0.502, 0.000, 0.721) in phase 0, FindBread, slip at 4.400s, (0.861, 0.000, 0.469) to (0.861, 0.000, 0.469) in phase 1, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 1: planted=477, swing=188, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 1 peaks: gap 0.0000 m at 1.183s, sole=(0.282, 0.000, 0.483) in phase 0, FindBread, slip at 10.017s, (3.106, 0.000, 1.524) to (3.106, 0.000, 1.524) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 2: planted=477, swing=188, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 2 peaks: gap 0.0000 m at 1.083s, sole=(0.467, 0.000, 0.714) in phase 0, FindBread, slip at 2.017s, (0.423, 0.000, 0.474) to (0.423, 0.000, 0.474) in phase 0, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 3: planted=486, swing=179, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 3 peaks: gap 0.0000 m at 0.600s, sole=(0.779, 0.000, 0.613) in phase 0, FindBread, slip at 10.017s, (2.874, 0.000, 1.727) to (2.874, 0.000, 1.727) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse tail: peak base=28.84 degrees, peak tip=12.57 degrees, lag=0.133s, correlation=0.98
+PASS: motion checks
+
+===== Phase2ReleaseMoving =====
+Scene: 725 enabled renderers, missing scripts=0, missing materials/shaders=0
+Player visual: 7 immediate children, 1 skinned renderers. Rat: 17 skin bones, readable mesh=True, vertices=1469
+Rat bone Rat Spine: (0.000, 0.000, 0.000)
+Rat bone Rat Head Joint: (0.180, 0.143, -0.010)
+Rat bone Rat Tail Joint: (-0.314, 0.061, 0.010)
+Rat bone Rat Tail Middle: (-0.370, 0.023, 0.000)
+Rat bone Rat Tail Tip: (-0.428, 0.010, 0.000)
+Rat bone Front Left Paw Hip: (0.079, 0.134, -0.062)
+Rat bone Front Left Paw Knee: (0.045, 0.067, -0.078)
+Rat bone Front Left Paw: (0.099, 0.007, -0.092)
+Rat bone Front Right Paw Hip: (0.079, 0.134, 0.062)
+Rat bone Front Right Paw Knee: (0.045, 0.067, 0.078)
+Rat bone Front Right Paw: (0.099, 0.007, 0.092)
+Rat bone Rear Left Paw Hip: (-0.139, 0.133, -0.062)
+Rat bone Rear Left Paw Knee: (-0.087, 0.069, -0.078)
+Rat bone Rear Left Paw: (-0.138, 0.006, -0.089)
+Rat bone Rear Right Paw Hip: (-0.139, 0.133, 0.062)
+Rat bone Rear Right Paw Knee: (-0.087, 0.069, 0.078)
+Rat bone Rear Right Paw: (-0.138, 0.006, 0.089)
+Composition aspect: 1.7778, moving reveal=True.
+Key support: Cell Walking Surface at Y=0.0000 m
+At bed: position=(-6.8290, 5.5126, -15.5796), size=2.0492, left=-7.2100, right=0.2445.
+SHOT 1 viewport anchors: hero=(0.090, 0.377, 17.167), bars=(0.943, 0.372, 16.597), rod=(0.247, 0.117, 16.920), key=(1.236, 0.652, 19.405) (active=True).
+Wake: maximum consecutive figure displacement=0.0420 m at 60 Hz, input root drift=0.0000 m
+Step 1: FindBread at 2.50s
+PASS: eating leaves the held bread and remaining portion count intact
+Step 2: FindBread at 6.22s
+PASS: Aim right/up: steady-state arm/forearm error=0.02 degrees, settle=0.150s, maximum forearm step=25.06 degrees
+PASS: Aim left/up: steady-state arm/forearm error=0.00 degrees, settle=0.083s, maximum forearm step=24.01 degrees
+PASS: Aim release: blend-out=0.167s, maximum forearm step=9.81 degrees
+Key before bread table: viewport=(1.0974, 0.6450, 19.1456), actor X=-3.2811, active=True, inside margins=False.
+Key before throw: viewport=(0.8302, 0.6216, 18.7603), actor X=-1.1278, active=True, inside margins=True.
+PASS: The hanging key was visible from a reachable throwing position.
+Bread: found interception with launch angle 17 degrees, cursor viewport=(0.5222, 0.4793, 16.4230).
+PASS: The successful bread direction is reachable by an on-screen cursor.
+Step 3: FindBread at 8.60s
+PASS: Key resting tilt: 0.00 degrees
+Key beat viewport anchors: hero=(0.100, 0.434, 15.561), bars=(0.179, 0.353, 15.240), rod=(-0.319, 0.170, 15.563), key=(0.386, 0.271, 18.345) (active=True).
+Step 4: KeyBehindGate at 11.50s
+Step 5: KeyBehindGate at 12.95s
+Step 6: KeyBehindGate at 15.50s
+Key before gate interaction: viewport=(0.4004, 0.0690, 16.8218), actor X=-1.0769, active=True, inside margins=True.
+Step 7: KeyWithinReach at 18.38s
+SHOT 2 viewport anchors: hero=(0.462, 0.455, 16.351), bars=(0.093, 0.308, 15.262), rod=(-0.151, 0.029, 15.220), key=(-0.048, 0.150, 15.555) (active=False).
+Step 8: GateOpen at 22.55s
+Step 9: Complete at 24.03s
+Composition reset: left/right drift=0.0000/0.0000 m at the matching bed beat; aspect=1.7778.
+PASS: Restart restored the original bed framing.
+Restart stage: FindBread
+Run: 1450 observed frames at 60 Hz, gameplay warnings/errors=0, known editor startup exceptions=0, max sleeve length change=0.0 %, idle foot gap=0.182 m, idle floor penetration=0.000 m
+PASS: puzzle sequence and restart
+PASS: Grate: physical stop x=-0.7930, standing approach overlap=0.0000 m (-), crouched overlap=0.0000 m (-), closed-gate interaction overlap=0.0000 m (-)
+Composition: closed left/right=-3.7596/3.2977, open left/right=-0.9217/7.0178, extra right=52.71% of closed width.
+Reveal motion: max right step=0.0681 m/frame, peak second difference=0.0024 m/frame squared, first frame step=0.0010 m, reverse step=0.0000 m; camera intersected level=False.
+Boot and rod overlap: 0.00000 m at 0.000s; rod wake travel=0.000000 m, rotation change=0.00000 degrees, scale change=0.000000; initial rod position=(-5.250000, 0.110000, 0.560000), rotation=(0.000000, -0.414693, 0.000000, 0.909961), scale=(3.780000, 1.000000, 1.000000).
+Wake floor: max consecutive near-floor horizontal boot step=0.00333 m; max floor penetration=0.00000 m.
+PASS: Gate reveal began smoothly and camera remained clear of colliders.
+PASS: Bed-exit boots cleared the unchanged rod.
+Frame wall time: 12.586 ms mean, 79.45 FPS, 1196 uncapped editor frames, excluding direct capture frames.
+PASS: Key floor clearance: drop=-0.0003 m, settled and dragged=0.0000 m, lowest pivot=(2.356, 0.202, 1.826)
+PASS: Gameplay warnings/errors: 0
+PASS: Player segment length drift: arm=0.000 %, legs=0.000 %, arm samples=1443, leg samples=1443/1443
+PASS: Wake: hip step=0.0269 m, stand seam=0.0005 m, boot penetration=0.0000 m
+General motion: max camera step=0.2424 m (from (-1.8076, 5.5126, -15.5796) to (-2.0500, 5.5126, -15.5796) in phase 4, KeyBehindGate at 11.667s), max grip-to-target gap at >=95% reach weight=0.7683 m (KeyBehindGate at 16.700s, shoulder=(-1.119, 0.813, -0.166), wrist=(-0.786, 0.581, 0.007), target=(-0.205, 0.178, 0.309))
+PASS: Player support: 1293 grounded, 0 airborne, 0 grounded without a boot inside 20 mm of support
+PASS: Player near boot: planted=1007, swing=286, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Player far boot: planted=1013, swing=280, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+PASS: Mouse gait: first diagonal=75 frames, second diagonal=62 frames, airborne=49 frames
+PASS: Mouse paw 0: planted=542, swing=123, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 0 peaks: gap 0.0000 m at 0.900s, sole=(0.502, 0.000, 0.721) in phase 0, FindBread, slip at 6.417s, (0.729, 0.000, 0.723) to (0.729, 0.000, 0.723) in phase 2, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 1: planted=529, swing=136, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 1 peaks: gap 0.0000 m at 1.383s, sole=(0.284, 0.000, 0.478) in phase 0, FindBread, slip at 10.083s, (3.091, 0.000, 1.539) to (3.091, 0.000, 1.539) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 2: planted=528, swing=137, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 2 peaks: gap 0.0000 m at 1.767s, sole=(0.465, 0.000, 0.711) in phase 0, FindBread, slip at 10.083s, (2.795, 0.000, 1.563) to (2.795, 0.000, 1.563) in phase 3, MouseJumping, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse paw 3: planted=542, swing=123, max sole gap=0.0000 m, max consecutive planted slip=0.0000 m
+    Mouse paw 3 peaks: gap 0.0000 m at 1.417s, sole=(0.443, 0.000, 0.522) in phase 0, FindBread, slip at 6.400s, (0.432, 0.000, 0.715) to (0.432, 0.000, 0.715) in phase 2, FindBread, skipped frame pairs=0, distinct adjacent contacts=0, largest adjacent replant delta=0.0000 m
+PASS: Mouse tail: peak base=28.81 degrees, peak tip=12.40 degrees, lag=0.133s, correlation=0.97
+PASS: motion checks

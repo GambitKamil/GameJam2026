@@ -1,0 +1,479 @@
+[
+  {
+    "shot": "SHOT-1.png",
+    "edge": "Hero",
+    "median": 2.875,
+    "minimum": 2.689,
+    "samples": [
+      {
+        "foreground": [
+          63,
+          339
+        ],
+        "background": [
+          41,
+          338
+        ],
+        "luminance": [
+          0.0526,
+          0.2258
+        ],
+        "ratio": 2.689
+      },
+      {
+        "foreground": [
+          143,
+          320
+        ],
+        "background": [
+          144,
+          301
+        ],
+        "luminance": [
+          0.3148,
+          0.0769
+        ],
+        "ratio": 2.875
+      },
+      {
+        "foreground": [
+          221,
+          306
+        ],
+        "background": [
+          224,
+          285
+        ],
+        "luminance": [
+          0.347,
+          0.0558
+        ],
+        "ratio": 3.753
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-1.png",
+    "edge": "Bars",
+    "median": 2.343,
+    "minimum": 1.513,
+    "samples": [
+      {
+        "foreground": [
+          831,
+          190
+        ],
+        "background": [
+          809,
+          190
+        ],
+        "luminance": [
+          0.0481,
+          0.3451
+        ],
+        "ratio": 4.026
+      },
+      {
+        "foreground": [
+          831,
+          259
+        ],
+        "background": [
+          815,
+          260
+        ],
+        "luminance": [
+          0.0611,
+          0.2103
+        ],
+        "ratio": 2.343
+      },
+      {
+        "foreground": [
+          895,
+          405
+        ],
+        "background": [
+          881,
+          406
+        ],
+        "luminance": [
+          0.1432,
+          0.0777
+        ],
+        "ratio": 1.513
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-1.png",
+    "edge": "Rod",
+    "median": 1.044,
+    "minimum": 1.024,
+    "samples": [
+      {
+        "foreground": [
+          172,
+          504
+        ],
+        "background": [
+          165,
+          489
+        ],
+        "luminance": [
+          0.0782,
+          0.2246
+        ],
+        "ratio": 2.143
+      },
+      {
+        "foreground": [
+          239,
+          476
+        ],
+        "background": [
+          231,
+          492
+        ],
+        "luminance": [
+          0.1599,
+          0.1649
+        ],
+        "ratio": 1.024
+      },
+      {
+        "foreground": [
+          295,
+          452
+        ],
+        "background": [
+          292,
+          468
+        ],
+        "luminance": [
+          0.1002,
+          0.0938
+        ],
+        "ratio": 1.044
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-2.png",
+    "edge": "Hero",
+    "median": 1.957,
+    "minimum": 1.783,
+    "samples": [
+      {
+        "foreground": [
+          326,
+          305
+        ],
+        "background": [
+          307,
+          301
+        ],
+        "luminance": [
+          0.5857,
+          0.2748
+        ],
+        "ratio": 1.957
+      },
+      {
+        "foreground": [
+          308,
+          360
+        ],
+        "background": [
+          281,
+          356
+        ],
+        "luminance": [
+          0.4133,
+          0.1472
+        ],
+        "ratio": 2.349
+      },
+      {
+        "foreground": [
+          302,
+          479
+        ],
+        "background": [
+          301,
+          467
+        ],
+        "luminance": [
+          0.047,
+          0.1229
+        ],
+        "ratio": 1.783
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-2.png",
+    "edge": "Bars",
+    "median": 3.69,
+    "minimum": 1.925,
+    "samples": [
+      {
+        "foreground": [
+          473,
+          151
+        ],
+        "background": [
+          493,
+          152
+        ],
+        "luminance": [
+          0.026,
+          0.2314
+        ],
+        "ratio": 3.702
+      },
+      {
+        "foreground": [
+          472,
+          291
+        ],
+        "background": [
+          489,
+          292
+        ],
+        "luminance": [
+          0.0273,
+          0.2352
+        ],
+        "ratio": 3.69
+      },
+      {
+        "foreground": [
+          475,
+          444
+        ],
+        "background": [
+          506,
+          449
+        ],
+        "luminance": [
+          0.0273,
+          0.0989
+        ],
+        "ratio": 1.925
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-2.png",
+    "edge": "Pipes",
+    "median": 1.473,
+    "minimum": 1.061,
+    "samples": [
+      {
+        "foreground": [
+          740,
+          40
+        ],
+        "background": [
+          740,
+          65
+        ],
+        "luminance": [
+          0.1313,
+          0.0731
+        ],
+        "ratio": 1.473
+      },
+      {
+        "foreground": [
+          818,
+          121
+        ],
+        "background": [
+          798,
+          121
+        ],
+        "luminance": [
+          0.2499,
+          0.0614
+        ],
+        "ratio": 2.694
+      },
+      {
+        "foreground": [
+          579,
+          149
+        ],
+        "background": [
+          594,
+          149
+        ],
+        "luminance": [
+          0.1827,
+          0.1694
+        ],
+        "ratio": 1.061
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-2.png",
+    "edge": "Cart",
+    "median": 1.93,
+    "minimum": 1.525,
+    "samples": [
+      {
+        "foreground": [
+          861,
+          326
+        ],
+        "background": [
+          861,
+          307
+        ],
+        "luminance": [
+          0.4485,
+          0.2769
+        ],
+        "ratio": 1.525
+      },
+      {
+        "foreground": [
+          913,
+          404
+        ],
+        "background": [
+          913,
+          384
+        ],
+        "luminance": [
+          0.0471,
+          0.143
+        ],
+        "ratio": 1.988
+      },
+      {
+        "foreground": [
+          825,
+          371
+        ],
+        "background": [
+          840,
+          371
+        ],
+        "luminance": [
+          0.1047,
+          0.0302
+        ],
+        "ratio": 1.93
+      }
+    ]
+  },
+  {
+    "shot": "05-air-catch.png",
+    "edge": "Resting key",
+    "median": 2.657,
+    "minimum": 2.537,
+    "samples": [
+      {
+        "foreground": [
+          367,
+          392
+        ],
+        "background": [
+          367,
+          382
+        ],
+        "luminance": [
+          0.4244,
+          0.137
+        ],
+        "ratio": 2.537
+      },
+      {
+        "foreground": [
+          374,
+          393
+        ],
+        "background": [
+          385,
+          386
+        ],
+        "luminance": [
+          0.3542,
+          0.0786
+        ],
+        "ratio": 3.143
+      },
+      {
+        "foreground": [
+          372,
+          396
+        ],
+        "background": [
+          365,
+          408
+        ],
+        "luminance": [
+          0.2205,
+          0.0518
+        ],
+        "ratio": 2.657
+      }
+    ]
+  },
+  {
+    "shot": "KEY-AIM.png",
+    "edge": "Hanging key",
+    "median": 3.297,
+    "minimum": 2.387,
+    "samples": [
+      {
+        "foreground": [
+          800,
+          188
+        ],
+        "background": [
+          799,
+          175
+        ],
+        "luminance": [
+          0.9211,
+          0.086
+        ],
+        "ratio": 7.142
+      },
+      {
+        "foreground": [
+          781,
+          205
+        ],
+        "background": [
+          766,
+          204
+        ],
+        "luminance": [
+          0.5602,
+          0.1351
+        ],
+        "ratio": 3.297
+      },
+      {
+        "foreground": [
+          802,
+          252
+        ],
+        "background": [
+          818,
+          251
+        ],
+        "luminance": [
+          0.2542,
+          0.0774
+        ],
+        "ratio": 2.387
+      }
+    ]
+  }
+]

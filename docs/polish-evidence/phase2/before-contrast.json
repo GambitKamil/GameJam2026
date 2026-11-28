@@ -1,0 +1,373 @@
+[
+  {
+    "shot": "SHOT-1.png",
+    "edge": "Hero",
+    "median": 1.214,
+    "minimum": 1.167,
+    "samples": [
+      {
+        "foreground": [
+          122,
+          337
+        ],
+        "background": [
+          102,
+          336
+        ],
+        "luminance": [
+          0.0282,
+          0.0413
+        ],
+        "ratio": 1.167
+      },
+      {
+        "foreground": [
+          267,
+          306
+        ],
+        "background": [
+          267,
+          284
+        ],
+        "luminance": [
+          0.095,
+          0.0595
+        ],
+        "ratio": 1.324
+      },
+      {
+        "foreground": [
+          337,
+          301
+        ],
+        "background": [
+          337,
+          279
+        ],
+        "luminance": [
+          0.0873,
+          0.0631
+        ],
+        "ratio": 1.214
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-1.png",
+    "edge": "Bars",
+    "median": 1.385,
+    "minimum": 1.01,
+    "samples": [
+      {
+        "foreground": [
+          914,
+          159
+        ],
+        "background": [
+          895,
+          161
+        ],
+        "luminance": [
+          0.0519,
+          0.0509
+        ],
+        "ratio": 1.01
+      },
+      {
+        "foreground": [
+          907,
+          223
+        ],
+        "background": [
+          892,
+          220
+        ],
+        "luminance": [
+          0.036,
+          0.0723
+        ],
+        "ratio": 1.422
+      },
+      {
+        "foreground": [
+          916,
+          396
+        ],
+        "background": [
+          895,
+          397
+        ],
+        "luminance": [
+          0.0552,
+          0.0957
+        ],
+        "ratio": 1.385
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-1.png",
+    "edge": "Rod",
+    "median": 1.225,
+    "minimum": 1.03,
+    "samples": [
+      {
+        "foreground": [
+          342,
+          474
+        ],
+        "background": [
+          337,
+          488
+        ],
+        "luminance": [
+          0.1155,
+          0.2182
+        ],
+        "ratio": 1.621
+      },
+      {
+        "foreground": [
+          298,
+          490
+        ],
+        "background": [
+          292,
+          503
+        ],
+        "luminance": [
+          0.1339,
+          0.1001
+        ],
+        "ratio": 1.225
+      },
+      {
+        "foreground": [
+          258,
+          504
+        ],
+        "background": [
+          253,
+          516
+        ],
+        "luminance": [
+          0.0877,
+          0.0837
+        ],
+        "ratio": 1.03
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-2.png",
+    "edge": "Hero",
+    "median": 2.997,
+    "minimum": 1.935,
+    "samples": [
+      {
+        "foreground": [
+          370,
+          300
+        ],
+        "background": [
+          344,
+          298
+        ],
+        "luminance": [
+          0.5366,
+          0.1221
+        ],
+        "ratio": 3.408
+      },
+      {
+        "foreground": [
+          356,
+          360
+        ],
+        "background": [
+          322,
+          359
+        ],
+        "luminance": [
+          0.3889,
+          0.0964
+        ],
+        "ratio": 2.997
+      },
+      {
+        "foreground": [
+          382,
+          491
+        ],
+        "background": [
+          420,
+          492
+        ],
+        "luminance": [
+          0.0612,
+          0.1652
+        ],
+        "ratio": 1.935
+      }
+    ]
+  },
+  {
+    "shot": "SHOT-2.png",
+    "edge": "Bars",
+    "median": 1.338,
+    "minimum": 1.152,
+    "samples": [
+      {
+        "foreground": [
+          518,
+          92
+        ],
+        "background": [
+          556,
+          92
+        ],
+        "luminance": [
+          0.0298,
+          0.042
+        ],
+        "ratio": 1.152
+      },
+      {
+        "foreground": [
+          518,
+          180
+        ],
+        "background": [
+          552,
+          180
+        ],
+        "luminance": [
+          0.0274,
+          0.0536
+        ],
+        "ratio": 1.338
+      },
+      {
+        "foreground": [
+          515,
+          473
+        ],
+        "background": [
+          549,
+          477
+        ],
+        "luminance": [
+          0.0389,
+          0.1058
+        ],
+        "ratio": 1.752
+      }
+    ]
+  },
+  {
+    "shot": "05-air-catch.png",
+    "edge": "Key",
+    "median": 2.208,
+    "minimum": 2.024,
+    "samples": [
+      {
+        "foreground": [
+          473,
+          368
+        ],
+        "background": [
+          474,
+          379
+        ],
+        "luminance": [
+          0.209,
+          0.055
+        ],
+        "ratio": 2.467
+      },
+      {
+        "foreground": [
+          469,
+          367
+        ],
+        "background": [
+          461,
+          373
+        ],
+        "luminance": [
+          0.2121,
+          0.0795
+        ],
+        "ratio": 2.024
+      },
+      {
+        "foreground": [
+          478,
+          369
+        ],
+        "background": [
+          485,
+          374
+        ],
+        "luminance": [
+          0.209,
+          0.0673
+        ],
+        "ratio": 2.208
+      }
+    ]
+  },
+  {
+    "shot": "04-aim-right.png",
+    "edge": "Hanging key",
+    "median": 2.229,
+    "minimum": 1.879,
+    "samples": [
+      {
+        "foreground": [
+          892,
+          186
+        ],
+        "background": [
+          895,
+          166
+        ],
+        "luminance": [
+          0.3048,
+          0.1092
+        ],
+        "ratio": 2.229
+      },
+      {
+        "foreground": [
+          874,
+          201
+        ],
+        "background": [
+          857,
+          201
+        ],
+        "luminance": [
+          0.3001,
+          0.1363
+        ],
+        "ratio": 1.879
+      },
+      {
+        "foreground": [
+          898,
+          245
+        ],
+        "background": [
+          913,
+          246
+        ],
+        "luminance": [
+          0.2655,
+          0.0783
+        ],
+        "ratio": 2.459
+      }
+    ]
+  }
+]

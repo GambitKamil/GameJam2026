@@ -1,0 +1,266 @@
+using System.Collections;
+using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody), typeof(AudioSource))]
+public sealed partial class CellMotion : MonoBehaviour
+{
+    [SerializeField] private Transform figure;
+    [SerializeField] private Transform sleeve;
+    [SerializeField] private Transform hand;
+    [SerializeField] private Transform nearLeg;
+    [SerializeField] private Transform farLeg;
+    [SerializeField] private Transform nearBoot;
+    [SerializeField] private Transform farBoot;
+    [SerializeField] private Transform head;
+    [SerializeField] private Transform nose;
+    [SerializeField] private Transform hair;
+    [SerializeField] private Transform eye;
+    [SerializeField] private Renderer bunkMattress;
+
+    private SideViewPlayer player;
+    private CellAnimationLibrary library;
+    private CellAnimationLibrary.Motion gesture;
+    private float gestureStart;
+    private float gestureDuration;
+    private float crouchBlend;
+    private float previousSpeed;
+    private float lean;
+    private AudioSource footsteps;
+    private AudioClip boot;
+    private Transform shoulder;
+    private Transform torso;
+    private LegPose frontLeg;
+    private LegPose backLeg;
+    private Transform neck;
+    private GameObject heldBread;
+    private Vector3 rest;
+    private float phase;
+    private float gait;
+    private float armAngle;
+    private float bend;
+    private float chew;
+    private int facing = 1;
+    private bool carryingRod;
+    private Vector3 handTarget;
+    private float handTargetWeight;
+    public int Facing => facing;
+    public bool OccupiesHand => heldBread != null || Busy;
+    public bool Busy { get; private set; }
+    public bool WakingUp { get; private set; }
+
+    private void Awake()
+    {
+        player = GetComponent<SideViewPlayer>();
+        library = GetComponent<CellAnimationLibrary>();
+        footsteps = GetComponent<AudioSource>();
+        rest = figure.localPosition;
+        shoulder = Pivot("Throw Shoulder", sleeve.position + Vector3.up * 0.11f, sleeve, hand);
+        InitializeArmPose();
+        neck = Pivot("Neck", head.position - Vector3.up * 0.14f, head, nose, hair, eye);
+        frontLeg = new LegPose(nearLeg, nearBoot);
+        backLeg = new LegPose(farLeg, farBoot);
+        InitializeLocomotion();
+        Vector3 hips = (frontLeg.Hip + backLeg.Hip) * 0.5f;
+        torso = Pivot("Torso at Hips", figure.TransformPoint(hips), figure.Find("Jacket"),
+            figure.Find("Jacket Seam"), shoulder, neck);
+        boot = MakeFootstep();
+    }
+
+    private Transform Pivot(string label, Vector3 position, params Transform[] parts)
+    {
+        var pivot = new GameObject(label).transform;
+        pivot.SetParent(figure, false);
+        pivot.position = position;
+        foreach (Transform part in parts)
+            part.SetParent(pivot, true);
+        return pivot;
+    }
+
+    public void Face(float x)
+    {
+        if (Mathf.Abs(x) > 0.05f)
+            facing = x < 0f ? -1 : 1;
+    }
+
+    public void SetCarryingRod(bool carrying)
+    {
+        carryingRod = carrying;
+    }
+
+    public void SetHandTarget(Vector3 target, float weight)
+    {
+        handTarget = target;
+        handTargetWeight = Mathf.Clamp01(weight);
+    }
+
+    public Vector3 HandPosition => hand.position;
+    public Vector3 ThrowOrigin(Vector3 direction) => HandPosition;
+
+    public void Hold(GameObject template)
+    {
+        PlayLibraryGesture(CellAnimationLibrary.Motion.TablePickup, 0.38f);
+        heldBread = Instantiate(template);
+        heldBread.name = "Bread In Hand";
+        heldBread.transform.localScale *= 0.72f;
+        heldBread.SetActive(true);
+    }
+
+    public void Release()
+    {
+        if (heldBread != null)
+            Destroy(heldBread);
+        heldBread = null;
+    }
+
+    public void Eat(GameObject template)
+    {
+        StartCoroutine(TakeBite(template));
+    }
+
+    private IEnumerator TakeBite(GameObject template)
+    {
+        Busy = true;
+        PlayLibraryGesture(CellAnimationLibrary.Motion.TablePickup, 0.68f);
+        var bite = Instantiate(template);
+        bite.name = "Bread Bite";
+        bite.transform.localScale *= 0.62f;
+        bite.SetActive(true);
+        for (float elapsed = 0; elapsed < 0.68f; elapsed += Time.deltaTime)
+        {
+            armAngle = 138f * Mathf.Clamp01(Mathf.Min(elapsed / 0.18f, (0.68f - elapsed) / 0.19f));
+            chew = elapsed >= 0.21f ? Mathf.Sin(elapsed * 51f) * 8f : 0f;
+            bite.SetActive(elapsed < 0.25f);
+            bite.transform.position = hand.position;
+            yield return null;
+        }
+
+        Destroy(bite);
+        EndAction();
+    }
+
+    public IEnumerator ThrowGesture(Vector3 direction, System.Action release)
+    {
+        Busy = true;
+        // Release from the pose that drew the guide, then finish the throwing motion.
+        Release();
+        release();
+        float throwSide = ThrowArmSide(direction);
+        PlayLibraryGesture(CellAnimationLibrary.Motion.Throw, 0.34f);
+        yield return Pose((105f + Mathf.Clamp(direction.y * 4f, -35f, 35f)) * throwSide, 12f, 0.12f);
+        yield return Pose(0f, 0f, 0.22f);
+        EndAction();
+    }
+
+    public IEnumerator Reach(float angle, float crouch, float duration)
+    {
+        Busy = true;
+        yield return Pose(angle, crouch, duration);
+    }
+
+    public void PlayLibraryGesture(CellAnimationLibrary.Motion clip, float seconds)
+    {
+        gesture = clip;
+        gestureStart = Time.time;
+        gestureDuration = seconds;
+    }
+
+    public void EndAction()
+    {
+        gestureDuration = 0f;
+        armAngle = bend = chew = handTargetWeight = 0f;
+        Busy = false;
+    }
+
+    private IEnumerator Pose(float angle, float crouch, float duration)
+    {
+        float startArm = armAngle;
+        float startBend = bend;
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            armAngle = Mathf.Lerp(startArm, angle, t);
+            bend = Mathf.Lerp(startBend, crouch, t);
+            yield return null;
+        }
+
+        armAngle = angle;
+        bend = crouch;
+    }
+
+    private void LateUpdate()
+    {
+        if (WakingUp)
+            return;
+
+        float speed = UpdateLocomotion();
+        UpdateFigureFacing();
+        figure.localPosition = rest;
+        float swing = Mathf.Sin(phase) * gait;
+        crouchBlend = Mathf.MoveTowards(crouchBlend, !Busy && player.Crouching ? 1f : 0f, Time.deltaTime * 5.5f);
+        float crouch = Mathf.Max(Mathf.Clamp01(bend / 36f), crouchBlend * 0.67f);
+        float acceleration = (speed - previousSpeed) / Mathf.Max(Time.deltaTime, 0.001f);
+        previousSpeed = speed;
+        lean = Mathf.MoveTowards(lean, Busy ? 0f : Mathf.Clamp(acceleration * 0.45f, -8f, 9f), 65f * Time.deltaTime);
+        float bob = Mathf.Abs(swing) * 0.025f;
+        var hipOffset = new Vector3(-0.15f * crouch, bob - 0.43f * crouch, 0f);
+        float pitch = -33f * crouch - 5f * gait - lean;
+        float restingArm = carryingRod ? 42f - 7f * swing : -26f * swing;
+        float arm = Busy ? armAngle : heldBread != null ? 67f : restingArm;
+        if (library != null)
+        {
+            var locomotion = SampleLocomotion();
+            if (!Busy)
+            {
+                hipOffset.y = Mathf.Lerp(hipOffset.y, locomotion.HipHeightDelta * 0.82f, 0.64f);
+                pitch = Mathf.Lerp(pitch, locomotion.TorsoPitch - lean, 0.65f);
+                if (!carryingRod && heldBread == null)
+                    arm = Mathf.Lerp(arm, locomotion.ArmPitch, 0.7f);
+            }
+
+            float progress = gestureDuration > 0f ? (Time.time - gestureStart) / gestureDuration : 1f;
+            if (progress < 1f)
+            {
+                var action = library.Sample(gesture, progress);
+                float weight = Mathf.Sin(progress * Mathf.PI);
+                pitch = Mathf.Lerp(pitch, action.TorsoPitch, weight * 0.75f);
+                hipOffset.y = Mathf.Lerp(hipOffset.y, action.HipHeightDelta * 0.85f, weight * 0.42f);
+                arm = Mathf.Lerp(arm, action.ArmPitch, weight * 0.28f);
+            }
+        }
+
+        hipOffset = PoseGroundedFeet(hipOffset);
+        torso.localPosition = (frontLeg.Hip + backLeg.Hip) * 0.5f + hipOffset;
+        torso.localRotation = Quaternion.Euler(0f, 0f, pitch);
+        shoulder.localRotation = Quaternion.Euler(0f, 0f, arm);
+        neck.localRotation = Quaternion.Euler(0f, 0f, chew);
+        LeanTowardHandTarget();
+        ApplyAimPose();
+        if (heldBread != null)
+            heldBread.transform.position = hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
+    }
+
+    private static AudioClip MakeFootstep()
+    {
+        const int sampleRate = 22050;
+        var samples = new float[2400];
+        var noise = new System.Random(41);
+        for (int i = 0; i < samples.Length; i++)
+        {
+            float t = (float)i / sampleRate;
+            float grit = (float)noise.NextDouble() * 2f - 1f;
+            samples[i] = Mathf.Min(t * 650f, 1f) * Mathf.Exp(-37f * t)
+                * (Mathf.Sin(t * 2f * Mathf.PI * 76f) * 0.56f + grit * 0.23f);
+        }
+
+        var clip = AudioClip.Create("Cell Boot on Stone", samples.Length, 1, sampleRate, false);
+        clip.SetData(samples, 0);
+        return clip;
+    }
+
+    private void OnDestroy()
+    {
+        Destroy(boot);
+        DestroyArmPose();
+        Release();
+    }
+}
