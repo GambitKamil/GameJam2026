@@ -94,11 +94,7 @@ public sealed partial class CellMotion : MonoBehaviour
     }
 
     public Vector3 HandPosition => hand.position;
-    public Vector3 ThrowOrigin(Vector3 direction)
-    {
-        float sign = Mathf.Abs(direction.x) > 0.05f ? Mathf.Sign(direction.x) : facing;
-        return transform.position + new Vector3(0.28f * sign, 0.48f, 0f);
-    }
+    public Vector3 ThrowOrigin(Vector3 direction) => HandPosition;
 
     public void Hold(GameObject template)
     {
@@ -145,12 +141,12 @@ public sealed partial class CellMotion : MonoBehaviour
     public IEnumerator ThrowGesture(Vector3 direction, System.Action release)
     {
         Busy = true;
-        float throwSide = ThrowArmSide(direction);
-        PlayLibraryGesture(CellAnimationLibrary.Motion.Throw, 0.51f);
-        yield return Pose(-95f * throwSide, 5f, 0.17f);
-        yield return Pose((105f + Mathf.Clamp(direction.y * 4f, -35f, 35f)) * throwSide, 12f, 0.12f);
+        // Release from the pose that drew the guide, then finish the throwing motion.
         Release();
         release();
+        float throwSide = ThrowArmSide(direction);
+        PlayLibraryGesture(CellAnimationLibrary.Motion.Throw, 0.34f);
+        yield return Pose((105f + Mathf.Clamp(direction.y * 4f, -35f, 35f)) * throwSide, 12f, 0.12f);
         yield return Pose(0f, 0f, 0.22f);
         EndAction();
     }

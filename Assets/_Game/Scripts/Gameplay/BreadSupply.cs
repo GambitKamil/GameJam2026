@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[DefaultExecutionOrder(50)]
 public sealed class BreadSupply : MonoBehaviour
 {
     [SerializeField] private SideViewPlayer player;
@@ -28,6 +29,7 @@ public sealed class BreadSupply : MonoBehaviour
     private CellMotion motion;
     private readonly List<Vector3> guidePoints = new List<Vector3>(480);
     private bool aiming;
+    private bool releaseAim;
     private Vector3 lastAimDirection;
 
     public bool IsHoldingPiece { get; private set; }
@@ -92,9 +94,18 @@ public sealed class BreadSupply : MonoBehaviour
         }
 
         motion.SetAim(lastAimDirection, true);
+        releaseAim = released;
+    }
+
+    private void LateUpdate()
+    {
+        if (!aiming || lastAimDirection == Vector3.zero)
+            return;
+
+        // The hand pose is resolved in CellMotion.LateUpdate before drawing or launching.
         Vector3 velocity = lastAimDirection * throwSpeed;
         Vector3 origin = motion.ThrowOrigin(velocity);
-        if (released)
+        if (releaseAim)
             Launch(origin, velocity);
         else
             DrawPreview(origin, velocity);
@@ -243,7 +254,7 @@ public sealed class BreadSupply : MonoBehaviour
 
     private void EndAim()
     {
-        aiming = false;
+        aiming = releaseAim = false;
         lastAimDirection = Vector3.zero;
         if (motion != null)
             motion.SetAim(Vector3.zero, false);
