@@ -28,6 +28,7 @@ public sealed class BreadSupply : MonoBehaviour
     private CellMotion motion;
     private readonly List<Vector3> guidePoints = new List<Vector3>(480);
     private bool aiming;
+    private Vector3 lastAimDirection;
 
     public bool IsHoldingPiece { get; private set; }
     public bool ThrowInProgress { get; private set; }
@@ -43,42 +44,60 @@ public sealed class BreadSupply : MonoBehaviour
 
     private void Update()
     {
-        if (!SideViewPlayer.CanReadInput)
+        if (!SideViewPlayer.CanReadInput || motion.Busy)
         {
-            EndAim();
+            if (aiming)
+                EndAim();
             return;
         }
-
-        if (motion.Busy)
-            return;
 
         if (Input.GetKeyDown(KeyCode.E) && IsNearTable() && TrySpendPiece())
             motion.Eat(crumbTemplate);
         if (Input.GetKeyDown(KeyCode.Q))
             TakePieceForThrow();
-        if (!IsHoldingPiece)
+        if (!IsHoldingPiece || motion.Busy)
+        {
+            if (aiming)
+                EndAim();
             return;
+        }
 
         if (Input.GetMouseButtonDown(0))
             aiming = true;
         if (!aiming)
             return;
 
+        bool released = Input.GetMouseButtonUp(0);
+        if (!released && !Input.GetMouseButton(0))
+        {
+            EndAim();
+            return;
+        }
+
         Vector3 center = player.transform.position + Vector3.up * 0.48f;
         var plane = new Plane(Vector3.forward, center);
         Ray ray = levelCamera.ScreenPointToRay(Input.mousePosition);
         if (plane.Raycast(ray, out float distance))
         {
-            Vector3 velocity = (ray.GetPoint(distance) - center).normalized * throwSpeed;
-            Vector3 origin = motion.ThrowOrigin(velocity);
-            if (Input.GetMouseButtonUp(0))
-                Launch(origin, velocity);
-            else
-                DrawPreview(origin, velocity);
+            Vector3 offset = ray.GetPoint(distance) - center;
+            if (offset.sqrMagnitude > 0.000001f)
+                lastAimDirection = offset.normalized;
         }
 
-        if (!Input.GetMouseButton(0))
-            EndAim();
+        if (lastAimDirection == Vector3.zero)
+        {
+            if (released)
+                EndAim();
+            return;
+        }
+
+        motion.SetAim(lastAimDirection, true);
+        Vector3 velocity = lastAimDirection * throwSpeed;
+        Vector3 origin = motion.ThrowOrigin(velocity);
+        if (released)
+            Launch(origin, velocity);
+        else
+            DrawPreview(origin, velocity);
     }
 
     public bool IsNearTable()
@@ -216,8 +235,16 @@ public sealed class BreadSupply : MonoBehaviour
     private void EndAim()
     {
         aiming = false;
+        lastAimDirection = Vector3.zero;
+        if (motion != null)
+            motion.SetAim(Vector3.zero, false);
         if (preview != null)
             preview.enabled = false;
+    }
+
+    private void OnDisable()
+    {
+        EndAim();
     }
 
     private void OnDestroy()

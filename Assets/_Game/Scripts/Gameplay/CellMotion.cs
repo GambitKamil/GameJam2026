@@ -147,10 +147,10 @@ public sealed partial class CellMotion : MonoBehaviour
     public IEnumerator ThrowGesture(Vector3 direction, System.Action release)
     {
         Busy = true;
-        Face(direction.x);
+        float throwSide = ThrowArmSide(direction);
         PlayLibraryGesture(CellAnimationLibrary.Motion.Throw, 0.51f);
-        yield return Pose(-95f, 5f, 0.17f);
-        yield return Pose(105f + Mathf.Clamp(direction.y * 4f, -35f, 35f), 12f, 0.12f);
+        yield return Pose(-95f * throwSide, 5f, 0.17f);
+        yield return Pose((105f + Mathf.Clamp(direction.y * 4f, -35f, 35f)) * throwSide, 12f, 0.12f);
         Release();
         release();
         yield return Pose(0f, 0f, 0.22f);
@@ -264,7 +264,7 @@ public sealed partial class CellMotion : MonoBehaviour
         backLeg.Pose(phase + Mathf.PI, gait, hipOffset, crouch, farStride, strideBlend);
         shoulder.localRotation = Quaternion.Euler(0f, 0f, arm);
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
-        AlignHand();
+        ApplyAimPose();
         if (heldBread != null)
             heldBread.transform.position = hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
     }
