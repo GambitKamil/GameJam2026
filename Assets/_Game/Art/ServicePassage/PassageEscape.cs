@@ -1,54 +1,55 @@
 using UnityEngine;
 
+// Night corridor: slip past the torch patrol, push the service cart onto the floor plate
+// to hold the gate open, and leave through the kitchen door.
 [DefaultExecutionOrder(50)]
 public sealed class PassageEscape : MonoBehaviour
 {
-    private enum Stage { FindKey, UnlockCabinet, CarryPlank, Cross, Escaped }
     [SerializeField] private SideViewPlayer player;
     [SerializeField] private PassagePatrol guard;
-    [SerializeField] private Transform key;
-    [SerializeField] private Transform door;
-    [SerializeField] private Transform plank;
-    [SerializeField] private Transform crossing;
+    [SerializeField] private ServiceCart cart;
+    [SerializeField] private PlateGate gate;
     [SerializeField] private Transform exit;
-    [SerializeField] private float cabinetX;
-    [SerializeField] private float nearEdge;
+    [SerializeField] private DetectionMeter meter;
+    [SerializeField] private DetectionVignette vignette;
+    [SerializeField] private float pushSpeed = 2.2f;
+    [SerializeField] private float noisySpeed = 1.75f;
+    [SerializeField] private float hearing = 10f;
+    [SerializeField] private float exposureRise = 1.05f;
+    [SerializeField] private float exposureFall = 1.6f;
+    [SerializeField] private float suspicious = 0.38f;
+    [SerializeField] private float closeRange = 2.4f;
 
     private CellMotion motion;
     private Rigidbody body;
-    private Collider plankCollider;
-    private Vector3 storedPosition;
-    private Quaternion storedRotation;
-    private Vector3 closedDoor;
     private Transform view;
     private Vector3 start;
-    private Stage stage;
-    private Stage savedStage;
     private Vector3 checkpoint;
+    private float checkpointCart;
+    private bool checkpointGate;
+    private bool holding;
+    private int side = 1;
+    private bool escaped;
     private float exposure;
     private float lostTime;
-    private float actionTime;
-    private float actionDuration;
     private float noteTime;
+    private float heardCooldown;
     private string note;
     private bool sawStart;
-    private bool crossed;
-    private Quaternion carryTilt;
-    private Vector3 placementStart;
-    private Quaternion placementRotation;
+    private bool everHeld;
     private GUIStyle caption;
     private GUIStyle warning;
+
+    private float Grip => cart.HalfLength + 0.34f;
 
     private void Awake()
     {
         motion = player.GetComponent<CellMotion>();
         body = player.GetComponent<Rigidbody>();
-        plankCollider = plank.GetComponent<Collider>();
-        storedPosition = plank.position;
-        storedRotation = plank.rotation;
-        closedDoor = door.localPosition;
         if (Camera.main != null) view = Camera.main.transform;
         start = checkpoint = body.position;
+        checkpointCart = cart.X;
+        cart.IgnorePlayer(player.GetComponent<Collider>());
     }
 
     private void Update()
@@ -61,154 +62,153 @@ public sealed class PassageEscape : MonoBehaviour
             if (lostTime <= 0f) Restore();
             return;
         }
-        if (stage == Stage.Escaped)
+        if (escaped)
         {
             if (Input.GetKeyDown(KeyCode.R))
             {
                 checkpoint = start;
-                savedStage = Stage.FindKey;
+                checkpointCart = cart.Home.x;
+                checkpointGate = false;
                 Restore();
             }
             return;
         }
 
-        Vector3 target = player.transform.position + new Vector3(0f, player.Crouching ? -0.06f : 0.44f, 0.20f);
-        bool lit = guard.LightsPoint(target);
-        exposure = Mathf.MoveTowards(exposure, lit ? 1f : 0f, dt * (lit ? 1.65f : 2.3f));
-        if (exposure >= 1f || body.position.y < -0.15f)
-        {
-            Fail(exposure >= 1f ? "Spotted" : "Watch your footing");
-            return;
-        }
-
         noteTime -= dt;
-        if (actionTime > 0f)
-        {
-            actionTime = Mathf.Max(0f, actionTime - dt);
-            float t = Mathf.SmoothStep(0f, 1f, 1f - actionTime / actionDuration);
-            if (stage == Stage.UnlockCabinet) SetDoor(t);
-            if (stage == Stage.CarryPlank)
-            {
-                plank.position = Vector3.Lerp(placementStart, crossing.position, t) + Vector3.up * (0.24f * Mathf.Sin(t * Mathf.PI));
-                plank.rotation = Quaternion.Slerp(placementRotation, crossing.rotation, t);
-            }
-            if (actionTime <= 0f) FinishAction();
-            return;
-        }
+        heardCooldown -= dt;
+        if (Input.GetKeyDown(KeyCode.E)) ToggleCart();
+        if (holding) motion.SetHandTarget(cart.Handle(side), 1f);
 
-        if (Input.GetKeyDown(KeyCode.E)) TryInteract();
-        if (stage == Stage.Cross && !crossed && body.position.x > crossing.position.x + 2.4f)
+        UpdateExposure(dt);
+        if (lostTime > 0f) return;
+
+        if (gate.CartOnPlate && !checkpointGate)
         {
-            crossed = true;
-            Save(Stage.Cross, crossing.position.x + 2.6f);
+            checkpointGate = true;
+            checkpoint = new Vector3(Mathf.Min(body.position.x, cart.X - Grip), start.y, start.z);
+            checkpointCart = cart.X;
+            Note("The gate holds   /   Checkpoint", 1.8f);
         }
-        if (stage == Stage.Cross && body.position.x >= exit.position.x)
+        if (!sawStart && body.position.x > start.x + 3f) sawStart = true;
+        if (body.position.x >= exit.position.x)
         {
-            stage = Stage.Escaped;
+            escaped = true;
+            Release();
             Freeze(true);
             if (GameManager.Instance != null) GameManager.Instance.CompleteCurrentLevel();
         }
-        if (!sawStart && body.position.x > start.x + 4.5f) sawStart = true;
+    }
+
+    private void UpdateExposure(float dt)
+    {
+        bool crouched = player.Crouching;
+        Vector3 target = player.transform.position + new Vector3(0f, crouched ? -0.06f : 0.44f, 0.20f);
+        bool lit = guard.LightsPoint(target);
+        // Standing right in front of him is never safe, even outside the beam.
+        float toPlayer = player.transform.position.x - guard.transform.position.x;
+        if (!crouched && Mathf.Abs(toPlayer) < closeRange && toPlayer * guard.Forward.x > 0f) lit = true;
+        exposure = Mathf.MoveTowards(exposure, lit ? 1f : 0f, dt * (lit ? exposureRise : exposureFall));
+
+        // He looks harder at a shape that keeps showing in the beam.
+        if (lit && exposure >= suspicious && heardCooldown <= 0f)
+        {
+            guard.Investigate(target);
+            heardCooldown = 1.2f;
+        }
+
+        // A cart shoved at a walk rattles; pushed slowly from a crouch it stays quiet.
+        if (holding && cart.Speed > noisySpeed && heardCooldown <= 0f
+            && Mathf.Abs(guard.transform.position.x - cart.X) < hearing)
+        {
+            guard.Investigate(cart.transform.position + Vector3.up * 0.5f);
+            heardCooldown = 2.2f;
+            Note("The cart rattles", 1.2f);
+        }
+
+        if (meter != null) meter.Level = exposure;
+        if (vignette != null) vignette.Level = exposure;
+        if (exposure >= 1f) Fail("Spotted");
+        else if (body.position.y < -0.15f) Fail("Watch your footing");
+    }
+
+    private void FixedUpdate()
+    {
+        if (!holding || lostTime > 0f || escaped) return;
+
+        // The cart sets the pace and stops at the ends of its track.
+        Vector3 velocity = body.linearVelocity;
+        velocity.x = Mathf.Clamp(velocity.x, -pushSpeed, pushSpeed);
+        float lo = cart.MinX - side * Grip;
+        float hi = cart.MaxX - side * Grip;
+        float x = body.position.x;
+        if (x < lo || x > hi)
+        {
+            body.position = new Vector3(Mathf.Clamp(x, lo, hi), body.position.y, body.position.z);
+            velocity.x = 0f;
+        }
+        body.linearVelocity = velocity;
     }
 
     private void LateUpdate()
     {
-        if (stage != Stage.CarryPlank || actionTime > 0f) return;
-        // Keep the board on the camera side of the body, balanced against the forearm.
-        carryTilt = Quaternion.Euler(0f, 0f, motion.Facing * 15f);
-        plank.SetPositionAndRotation(motion.HandPosition + new Vector3(0f, 0.05f, -0.18f), carryTilt);
+        if (holding) cart.MoveTo(player.transform.position.x + side * Grip);
     }
 
-    private void TryInteract()
+    private void ToggleCart()
     {
-        if (stage == Stage.FindKey && Near(key.position.x, 0.88f))
-            BeginAction(key.position, 0.46f, CellAnimationLibrary.Motion.TablePickup);
-        else if (stage == Stage.UnlockCabinet && Near(cabinetX, 0.96f))
-            BeginAction(new Vector3(cabinetX, 1.10f, 0.5f), 0.78f, CellAnimationLibrary.Motion.Interact);
-        else if (stage == Stage.CarryPlank && body.position.x >= nearEdge - 1.18f && body.position.x <= nearEdge + 0.2f)
+        if (holding)
         {
-            placementStart = plank.position;
-            placementRotation = plank.rotation;
-            BeginAction(new Vector3(nearEdge + 0.2f, 0.23f, 0f), 0.78f, CellAnimationLibrary.Motion.FloorPickup);
+            Release();
+            return;
         }
+        if (!NearHandle(out int handleSide)) return;
+        side = handleSide;
+        holding = everHeld = true;
+        motion.Face(side);
+        motion.SetHandTarget(cart.Handle(side), 1f);
     }
 
-    private void BeginAction(Vector3 target, float duration, CellAnimationLibrary.Motion gesture)
+    private bool NearHandle(out int handleSide)
     {
-        actionDuration = actionTime = duration;
-        Freeze(true);
-        motion.Face(target.x - body.position.x);
-        motion.PlayLibraryGesture(gesture, duration);
-        motion.SetHandTarget(target, 1f);
+        float dx = cart.X - body.position.x;
+        handleSide = dx >= 0f ? 1 : -1;
+        return Mathf.Abs(Mathf.Abs(dx) - Grip) < 0.55f;
     }
 
-    private void FinishAction()
+    private void Release()
     {
-        Freeze(false);
+        if (!holding) return;
+        holding = false;
         motion.EndAction();
-        switch (stage)
-        {
-            case Stage.FindKey:
-                stage = Stage.UnlockCabinet;
-                key.gameObject.SetActive(false);
-                Save(stage, key.position.x);
-                break;
-            case Stage.UnlockCabinet:
-                stage = Stage.CarryPlank;
-                SetDoor(1f);
-                motion.SetCarryingRod(true);
-                Note("Take the plank to the missing floor", 2f);
-                break;
-            case Stage.CarryPlank:
-                stage = Stage.Cross;
-                motion.SetCarryingRod(false);
-                SetBridge();
-                break;
-        }
-    }
-
-    private void SetDoor(float t) => door.localPosition = closedDoor + Vector3.left * (1.14f * t);
-
-    private void SetBridge()
-    {
-        plank.SetPositionAndRotation(crossing.position, crossing.rotation);
-        plankCollider.enabled = true;
-    }
-
-    private void Save(Stage current, float x)
-    {
-        checkpoint = new Vector3(x, start.y, start.z);
-        savedStage = current;
-        Note(current == Stage.UnlockCabinet ? "Cabinet key   /   Checkpoint" : "Checkpoint", 1.65f);
     }
 
     private void Fail(string reason)
     {
+        Release();
         Freeze(true);
-        lostTime = 0.88f;
+        lostTime = 1.1f;
+        if (meter != null) meter.Spotted();
+        if (AudioManager.Instance != null) AudioManager.Instance.Play(AudioIds.Detected);
         Note(reason + "   /   Back to checkpoint", lostTime);
     }
 
     private void Restore()
     {
-        stage = savedStage;
-        actionTime = lostTime = exposure = noteTime = 0f;
-        crossed = stage == Stage.Cross;
-        sawStart = stage != Stage.FindKey;
+        escaped = false;
+        lostTime = exposure = noteTime = 0f;
+        heardCooldown = 0.5f;
+        if (meter != null) meter.Level = 0f;
+        if (vignette != null) vignette.Level = 0f;
         if (view != null) view.position += Vector3.right * (checkpoint.x - body.position.x);
         body.position = checkpoint;
         player.transform.position = checkpoint;
         Freeze(false);
         body.linearVelocity = Vector3.zero;
         motion.EndAction();
-        motion.SetCarryingRod(false);
-        key.gameObject.SetActive(stage == Stage.FindKey);
-        SetDoor(crossed ? 1f : 0f);
-        plankCollider.enabled = crossed;
-        if (crossed) SetBridge();
-        else plank.SetPositionAndRotation(storedPosition, storedRotation);
-        float patrolStart = crossed ? checkpoint.x - 4f : checkpoint.x + 12f;
-        guard.RestartAt(stage == Stage.FindKey ? 65f : patrolStart);
+        cart.ResetTo(checkpointCart);
+        gate.ResetGate(checkpointGate);
+        // Send the patrol to the far end so the player gets a fresh window.
+        guard.RestartAt(checkpointGate ? cart.MinX : cart.MaxX);
         Physics.SyncTransforms();
     }
 
@@ -219,25 +219,19 @@ public sealed class PassageEscape : MonoBehaviour
         body.isKinematic = value;
     }
 
-    private bool Near(float x, float radius) => Mathf.Abs(body.position.x - x) <= radius;
     private void Note(string message, float duration) { note = message; noteTime = duration; }
 
     private string Prompt()
     {
         if (lostTime > 0f) return note;
-        if (stage == Stage.Escaped) return "Corridor cleared     /     R   Play again";
-        if (actionTime > 0f) return null;
-        if (stage == Stage.FindKey && Near(key.position.x, 1.1f))
-            return Near(key.position.x, 0.88f) ? "E   Take the cabinet key" : "A key on the crate";
-        if (Near(cabinetX, 0.96f))
-        {
-            if (stage == Stage.FindKey) return "Locked   /   A plank behind the grille";
-            if (stage == Stage.UnlockCabinet) return "E   Unlock and take the plank";
-        }
-        if (Near(nearEdge, 1.18f) && stage < Stage.Cross)
-            return stage == Stage.CarryPlank ? "E   Lay the plank" : "A plank would span this gap";
+        if (escaped) return GameManager.Instance == null ? "Corridor cleared     /     R   Play again" : null;
         if (noteTime > 0f) return note;
-        if (!sawStart) return "A / D   Move     Ctrl   Crouch behind cover     E   Use";
+        if (holding)
+            return cart.X > cart.Home.x + 2.5f ? null : "Ctrl   Push quietly     E   Let go";
+        if (NearHandle(out _)) return "E   Grab the cart";
+        if (!sawStart) return "A / D   Move     Ctrl   Crouch in the shadows     E   Use";
+        if (!gate.Pressed && !gate.CartOnPlate && Mathf.Abs(body.position.x - gate.PlateX) < 2.2f)
+            return "The plate lifts the gate";
         return null;
     }
 
@@ -254,9 +248,7 @@ public sealed class PassageEscape : MonoBehaviour
         float scale = Mathf.Clamp(Screen.height / 780f, 0.72f, 1.7f);
         caption.fontSize = warning.fontSize = Mathf.RoundToInt(16f * scale);
         string message = Prompt();
-        if (message != null) Label(message, 0.88f, caption, scale);
-        if (exposure > 0.08f && lostTime <= 0f && stage != Stage.Escaped)
-            Label("In the light", 0.79f, warning, scale);
+        if (message != null) Label(message, 0.88f, lostTime > 0f ? warning : caption, scale);
     }
 
     private static void Label(string text, float y, GUIStyle style, float scale)
@@ -264,7 +256,7 @@ public sealed class PassageEscape : MonoBehaviour
         float width = style.CalcSize(new GUIContent(text)).x + 36f * scale;
         var rect = new Rect((Screen.width - width) * 0.5f, Screen.height * y, width, 34f * scale);
         Color previous = GUI.color;
-        GUI.color = new Color(0.025f, 0.038f, 0.045f, 0.9f);
+        GUI.color = new Color(0.02f, 0.025f, 0.03f, 0.82f);
         GUI.DrawTexture(rect, Texture2D.whiteTexture);
         GUI.color = previous;
         GUI.Label(rect, text, style);
