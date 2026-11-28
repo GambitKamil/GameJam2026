@@ -159,6 +159,7 @@ internal static partial class CellPolishVerification
         foreach (Transform bone in rat.bones)
             Record($"Rat bone {bone.name}: {rat.transform.InverseTransformPoint(bone.position):F3}");
         InitializeMetrics();
+        InitializeGrateProbe();
         active = true;
     }
 
@@ -166,7 +167,10 @@ internal static partial class CellPolishVerification
     {
         frames++;
         if (sleeve != null)
+        {
             SampleMotion();
+            SampleGrateInteraction();
+        }
         if (sleeve != null)
             armStretch = Mathf.Max(armStretch, Mathf.Abs(sleeve.localScale.y / armLength - 1f));
         if (Time.time - began > 55f)
@@ -197,6 +201,8 @@ internal static partial class CellPolishVerification
                 Next();
                 break;
             case 1:
+                if (!PushAgainstGrate())
+                    return;
                 if (!WalkTo(bread.transform.position.x))
                     return;
                 if (Time.time - phaseTime < 0.18f)
@@ -204,6 +210,11 @@ internal static partial class CellPolishVerification
                 Call(bread, "TakePieceForThrow");
                 if (!bread.IsHoldingPiece)
                     throw new InvalidOperationException("Could not take bread at the table.");
+                int remaining = Field<int>(bread, "remaining");
+                if ((bool)Call(bread, "TryEatAtTable") || !bread.IsHoldingPiece ||
+                    Field<int>(bread, "remaining") != remaining || motion.Busy)
+                    throw new InvalidOperationException("Eating consumed bread or started a bite while the hand was occupied.");
+                Record("PASS: eating leaves the held bread and remaining portion count intact");
                 Next();
                 break;
             case 2:
@@ -366,7 +377,10 @@ internal static partial class CellPolishVerification
         Record($"Run: {frames} observed frames at {SampleRate} Hz, gameplay warnings/errors={errors}, known editor startup exceptions={editorErrors}, max sleeve length change={armStretch:P1}, idle foot gap={floorGap:F3} m, idle floor penetration={floorDepth:F3} m");
         Record(result);
         if (active)
+        {
+            ReportGrateProbe();
             ReportMotionMetrics();
+        }
         ResetRun();
         SessionState.EraseString(OutputKey);
         EditorApplication.isPlaying = false;
