@@ -39,11 +39,14 @@ public sealed class PassageEscape : MonoBehaviour
     private bool everHeld;
     private GUIStyle caption;
     private GUIStyle warning;
+    private float holdOffset;
+    private readonly GUIContent content = new GUIContent();
 
     private float Grip => cart.HalfLength + 0.34f;
 
     private void Awake()
     {
+        useGUILayout = false;
         motion = player.GetComponent<CellMotion>();
         body = player.GetComponent<Rigidbody>();
         if (Camera.main != null) view = Camera.main.transform;
@@ -93,6 +96,9 @@ public sealed class PassageEscape : MonoBehaviour
         if (body.position.x >= exit.position.x)
         {
             escaped = true;
+            exposure = 0f;
+            if (meter != null) meter.Level = 0f;
+            if (vignette != null) vignette.Level = 0f;
             Release();
             Freeze(true);
             if (GameManager.Instance != null) GameManager.Instance.CompleteCurrentLevel();
@@ -138,20 +144,19 @@ public sealed class PassageEscape : MonoBehaviour
         // The cart sets the pace and stops at the ends of its track.
         Vector3 velocity = body.linearVelocity;
         velocity.x = Mathf.Clamp(velocity.x, -pushSpeed, pushSpeed);
-        float lo = cart.MinX - side * Grip;
-        float hi = cart.MaxX - side * Grip;
+        // Stop by velocity, not by moving the interpolated body, so the push never jitters at an end.
+        float lo = cart.MinX - side * holdOffset;
+        float hi = cart.MaxX - side * holdOffset;
         float x = body.position.x;
-        if (x < lo || x > hi)
-        {
-            body.position = new Vector3(Mathf.Clamp(x, lo, hi), body.position.y, body.position.z);
-            velocity.x = 0f;
-        }
+        float next = x + velocity.x * Time.fixedDeltaTime;
+        if (next > hi) velocity.x = Mathf.Min(velocity.x, (hi - x) / Time.fixedDeltaTime);
+        if (next < lo) velocity.x = Mathf.Max(velocity.x, (lo - x) / Time.fixedDeltaTime);
         body.linearVelocity = velocity;
     }
 
     private void LateUpdate()
     {
-        if (holding) cart.MoveTo(player.transform.position.x + side * Grip);
+        if (holding) cart.MoveTo(player.transform.position.x + side * holdOffset);
     }
 
     private void ToggleCart()
@@ -163,6 +168,9 @@ public sealed class PassageEscape : MonoBehaviour
         }
         if (!NearHandle(out int handleSide)) return;
         side = handleSide;
+        // Keep the cart where it stands: a snap to the ideal grip would read as a loud shove.
+        holdOffset = Mathf.Abs(cart.X - body.position.x);
+        cart.ResetTo(cart.X);
         holding = everHeld = true;
         motion.Face(side);
         motion.SetHandTarget(cart.Handle(side), 1f);
@@ -172,7 +180,8 @@ public sealed class PassageEscape : MonoBehaviour
     {
         float dx = cart.X - body.position.x;
         handleSide = dx >= 0f ? 1 : -1;
-        return Mathf.Abs(Mathf.Abs(dx) - Grip) < 0.55f;
+        float distance = Mathf.Abs(dx);
+        return distance > cart.HalfLength + 0.12f && distance < Grip + 0.55f;
     }
 
     private void Release()
@@ -251,9 +260,10 @@ public sealed class PassageEscape : MonoBehaviour
         if (message != null) Label(message, 0.88f, lostTime > 0f ? warning : caption, scale);
     }
 
-    private static void Label(string text, float y, GUIStyle style, float scale)
+    private void Label(string text, float y, GUIStyle style, float scale)
     {
-        float width = style.CalcSize(new GUIContent(text)).x + 36f * scale;
+        content.text = text;
+        float width = style.CalcSize(content).x + 36f * scale;
         var rect = new Rect((Screen.width - width) * 0.5f, Screen.height * y, width, 34f * scale);
         Color previous = GUI.color;
         GUI.color = new Color(0.02f, 0.025f, 0.03f, 0.82f);

@@ -3354,6 +3354,7 @@ MonoBehaviour:
   exposureRise: 1.05
   exposureFall: 1.6
   suspicious: 0.38
+  closeRange: 2.4
 --- !u!4 &194919401
 Transform:
   m_ObjectHideFlags: 0
@@ -20791,7 +20792,7 @@ MonoBehaviour:
   treadDepth: 0.03
   liftHeight: 2.35
   liftSpeed: 1.5
-  dropSpeed: 2.6
+  dropSpeed: 3.2
 --- !u!1 &1314046830
 GameObject:
   m_ObjectHideFlags: 0

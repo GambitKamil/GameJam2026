@@ -14,7 +14,7 @@ public sealed class PlateGate : MonoBehaviour
     [SerializeField] private float treadDepth = 0.03f;
     [SerializeField] private float liftHeight = 2.35f;
     [SerializeField] private float liftSpeed = 1.5f;
-    [SerializeField] private float dropSpeed = 2.6f;
+    [SerializeField] private float dropSpeed = 3.2f;
 
     private Vector3 treadRest;
     private Vector3 leafRest;
@@ -37,6 +37,8 @@ public sealed class PlateGate : MonoBehaviour
     public void ResetGate(bool cartHolds)
     {
         open = cartHolds ? 1f : 0f;
+        Pressed = wasPressed = CartOnPlate = cartHolds;
+        wasMoving = false;
         Apply();
     }
 
@@ -53,8 +55,10 @@ public sealed class PlateGate : MonoBehaviour
             wasPressed = Pressed;
         }
 
-        // Never close on the prisoner standing under the leaf.
-        bool inDoorway = player != null && Mathf.Abs(player.position.x - leaf.position.x) < 0.75f;
+        // Never close on the prisoner standing under the raised leaf. Leaning on the shut gate does not count.
+        bool underLeaf = blocker == null || !blocker.enabled;
+        float doorway = (blocker != null ? blocker.size.x * 0.5f : 0.2f) + 0.45f;
+        bool inDoorway = player != null && underLeaf && Mathf.Abs(player.position.x - leaf.position.x) < doorway;
         float goal = Pressed || (inDoorway && open > 0.05f) ? 1f : 0f;
         float before = open;
         open = Mathf.MoveTowards(open, goal, Time.deltaTime * (goal > open ? liftSpeed : dropSpeed) / liftHeight);
