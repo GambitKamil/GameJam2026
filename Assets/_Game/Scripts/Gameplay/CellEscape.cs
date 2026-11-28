@@ -12,6 +12,10 @@ public sealed class CellEscape : MonoBehaviour
     [SerializeField] private Transform gate;
     [SerializeField] private Transform exit;
     [SerializeField] private AudioSource sound;
+    [SerializeField] private Vector2 mouseStrideLength = new Vector2(0.14f, 0.22f);
+    [SerializeField] private Vector2 mouseStepHeight = new Vector2(0.028f, 0.050f);
+    [SerializeField, Min(0.01f)] private float mouseTurnTime = 0.10f;
+    [SerializeField, Min(0.01f)] private float mouseTailResponse = 0.085f;
 
     private enum Stage { FindBread, MouseJumping, KeyBehindGate, KeyWithinReach, GateOpen, ExitOpen, Complete }
 
@@ -28,11 +32,7 @@ public sealed class CellEscape : MonoBehaviour
     private SideViewCamera followCamera;
     private BreadSupply bread;
     private CellMotion motion;
-    private Transform mouseHead;
-    private Transform mouseTail;
-    private Quaternion mouseHeadRest;
-    private Quaternion mouseTailRest;
-    private float mouseFacing = 1f;
+    private CellMouseMotion mouseMotion;
     private Vector3 catchRunStart;
     private Vector3 catchTakeoff;
     private Vector3 catchDestination;
@@ -57,10 +57,7 @@ public sealed class CellEscape : MonoBehaviour
         gateLock = gate.Find("Lock Plate");
         mouseHome = mouse.position;
         motion = player.GetComponent<CellMotion>();
-        mouseHead = mouse.Find("Mouse Head");
-        mouseTail = mouse.Find("Mouse Tail");
-        mouseHeadRest = mouseHead.localRotation;
-        mouseTailRest = mouseTail.localRotation;
+        mouseMotion = new CellMouseMotion(mouse, mouseStrideLength, mouseStepHeight, mouseTurnTime, mouseTailResponse);
         nextWander = Time.time + Random.Range(0.45f, 1.2f);
         clang = MakeSound("Key clang", 0.38f, 840f, 1417f);
         step = MakeSound("Guard boot", 0.18f, 62f, 109f);
@@ -104,12 +101,11 @@ public sealed class CellEscape : MonoBehaviour
         float runTime = catchTime - catchJumpTime;
         if (elapsed < runTime)
         {
-            FaceMouse(catchTakeoff.x - catchRunStart.x);
-            SetMouseStride(catchRunStart, catchTakeoff, elapsed, runTime);
+            float preload = 1f - Mathf.Clamp01((runTime - elapsed) / 0.09f);
+            SetMouseStride(catchRunStart, catchTakeoff, elapsed, runTime, preload);
             return;
         }
 
-        FaceMouse(catchDestination.x - catchTakeoff.x);
         SetMouseJump(catchTakeoff, catchDestination, Mathf.Clamp01((elapsed - runTime) / catchJumpTime), 0.25f);
     }
 
@@ -130,11 +126,11 @@ public sealed class CellEscape : MonoBehaviour
             yield return RunMouse(stop, RunDuration(stop));
             for (float elapsed = 0f; elapsed < 0.22f; elapsed += Time.deltaTime)
             {
-                mouseHead.localRotation = mouseHeadRest * Quaternion.Euler(0f, 0f, Mathf.Sin(elapsed * 57f) * 15f);
+                mouseMotion.NibblePitch = Mathf.Sin(elapsed * 57f) * 15f;
                 yield return null;
             }
 
-            mouseHead.localRotation = mouseHeadRest;
+            mouseMotion.NibblePitch = 0f;
             if (reachable)
                 Destroy(crumb.gameObject);
             Vector3 retreat = new Vector3(Mathf.Clamp(food.x + 0.75f, gate.position.x + 0.9f, exit.position.x - 0.9f), 0f, mouseHome.z);
@@ -197,54 +193,42 @@ public sealed class CellEscape : MonoBehaviour
     private IEnumerator RunMouse(Vector3 destination, float duration)
     {
         Vector3 start = mouse.position;
-        FaceMouse(destination.x - start.x);
         for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
             SetMouseStride(start, destination, elapsed, duration);
             yield return null;
         }
 
-        mouse.position = destination;
-        mouse.rotation = Quaternion.identity;
-        mouseTail.localRotation = mouseTailRest;
+        SetMouseStride(start, destination, duration, duration);
     }
 
-    private void SetMouseStride(Vector3 start, Vector3 destination, float elapsed, float duration)
+    private void SetMouseStride(Vector3 start, Vector3 destination, float elapsed, float duration, float preload = 0f)
     {
         float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
-        float gait = elapsed * 49f;
-        mouse.position = Vector3.Lerp(start, destination, t) + Vector3.up * (Mathf.Abs(Mathf.Sin(gait)) * 0.052f);
-        mouse.rotation = Quaternion.Euler(0f, 0f, Mathf.Sin(gait) * 6f);
-        mouseTail.localRotation = mouseTailRest * Quaternion.Euler(0f, Mathf.Sin(gait) * 14f, 0f);
+        mouse.position = Vector3.Lerp(start, destination, t);
+        mouseMotion.Run(destination - start, preload);
     }
 
     private IEnumerator MouseJump(Vector3 destination, float duration, float height)
     {
         Vector3 start = mouse.position;
-        FaceMouse(destination.x - start.x);
         for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
             SetMouseJump(start, destination, elapsed / duration, height);
             yield return null;
         }
 
-        mouse.position = destination;
-        mouse.rotation = Quaternion.identity;
+        SetMouseJump(start, destination, 1f, height);
     }
 
     private void SetMouseJump(Vector3 start, Vector3 destination, float t, float height)
     {
         mouse.position = Vector3.Lerp(start, destination, t) + Vector3.up * (4f * height * t * (1f - t));
-        mouse.rotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-24f, 18f, t) * mouseFacing);
-        mouseTail.localRotation = mouseTailRest;
-    }
-
-    private void FaceMouse(float direction)
-    {
-        if (Mathf.Abs(direction) < 0.05f)
-            return;
-        mouseFacing = Mathf.Sign(direction);
-        mouse.localScale = new Vector3(-mouseFacing, 1f, 1f);
+        bool lands = destination.y <= 0.05f;
+        if (lands && t >= 1f)
+            mouseMotion.Run(destination - start);
+        else
+            mouseMotion.Jump(destination - start, t, lands);
     }
 
     private IEnumerator GuardApproaches()
@@ -301,14 +285,11 @@ public sealed class CellEscape : MonoBehaviour
                 return;
             }
 
-            mouse.position = wanderTarget;
-            mouse.rotation = Quaternion.identity;
+            SetMouseStride(wanderStart, wanderTarget, wanderDuration, wanderDuration);
             wanderDuration = 0f;
             nextWander = Time.time + Random.Range(0.65f, 2.1f);
         }
 
-        mouseHead.localRotation = mouseHeadRest * Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 7f) * 4.5f);
-        mouseTail.localRotation = mouseTailRest * Quaternion.Euler(0f, Mathf.Sin(Time.time * 3.1f) * 9f, 0f);
         if (Time.time < nextWander)
             return;
 
@@ -327,11 +308,12 @@ public sealed class CellEscape : MonoBehaviour
         float distance = Vector3.Distance(wanderStart, wanderTarget);
         wanderDuration = Mathf.Max(0.30f, distance / Mathf.Lerp(1.20f, 2.9f, Mathf.Clamp01(distance / 4f)));
         wanderTime = 0f;
-        FaceMouse(wanderTarget.x - wanderStart.x);
+        mouseMotion.Run(wanderTarget - wanderStart);
     }
 
     private void LateUpdate()
     {
+        mouseMotion.Tick(Time.deltaTime);
         if (liftingRod)
             rod.position = motion.HandPosition - rod.TransformVector(new Vector3(-0.27f, 0f, 0f));
         else if (haveRod && !rodInUse)
@@ -687,6 +669,7 @@ public sealed class CellEscape : MonoBehaviour
 
     private void OnDestroy()
     {
+        mouseMotion?.Release();
         Destroy(clang);
         Destroy(step);
         Destroy(scrape);
