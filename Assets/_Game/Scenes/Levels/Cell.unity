@@ -828,7 +828,7 @@ GameObject:
   - component: {fileID: 16173007}
   - component: {fileID: 16173009}
   - component: {fileID: 16173008}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -918,7 +918,7 @@ GameObject:
   - component: {fileID: 17033844}
   - component: {fileID: 17033846}
   - component: {fileID: 17033845}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1249,7 +1249,7 @@ GameObject:
   - component: {fileID: 24167152}
   - component: {fileID: 24167154}
   - component: {fileID: 24167153}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Skirting
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1339,7 +1339,7 @@ GameObject:
   - component: {fileID: 25455561}
   - component: {fileID: 25455563}
   - component: {fileID: 25455562}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1429,7 +1429,7 @@ GameObject:
   - component: {fileID: 26613631}
   - component: {fileID: 26613633}
   - component: {fileID: 26613632}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Lower Feed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3792,6 +3792,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1615193444}
+  - {fileID: 1081939903}
   m_Father: {fileID: 1660333424}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!108 &103164837
@@ -3904,7 +3905,7 @@ GameObject:
   - component: {fileID: 105571918}
   - component: {fileID: 105571920}
   - component: {fileID: 105571919}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3994,7 +3995,7 @@ GameObject:
   - component: {fileID: 107259566}
   - component: {fileID: 107259568}
   - component: {fileID: 107259567}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4084,7 +4085,7 @@ GameObject:
   - component: {fileID: 109623262}
   - component: {fileID: 109623264}
   - component: {fileID: 109623263}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4174,7 +4175,7 @@ GameObject:
   - component: {fileID: 113209016}
   - component: {fileID: 113209018}
   - component: {fileID: 113209017}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4444,7 +4445,7 @@ GameObject:
   - component: {fileID: 144668701}
   - component: {fileID: 144668703}
   - component: {fileID: 144668702}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Pipe Collar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4624,7 +4625,7 @@ GameObject:
   - component: {fileID: 151550448}
   - component: {fileID: 151550450}
   - component: {fileID: 151550449}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6071,7 +6072,7 @@ GameObject:
   - component: {fileID: 178616729}
   - component: {fileID: 178616731}
   - component: {fileID: 178616730}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7202,7 +7203,7 @@ GameObject:
   - component: {fileID: 231547488}
   - component: {fileID: 231547490}
   - component: {fileID: 231547489}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7382,7 +7383,7 @@ GameObject:
   - component: {fileID: 233406289}
   - component: {fileID: 233406291}
   - component: {fileID: 233406290}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7953,7 +7954,7 @@ GameObject:
   - component: {fileID: 241498262}
   - component: {fileID: 241498264}
   - component: {fileID: 241498263}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8577,7 +8578,7 @@ GameObject:
   - component: {fileID: 258377549}
   - component: {fileID: 258377551}
   - component: {fileID: 258377550}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8937,7 +8938,7 @@ GameObject:
   - component: {fileID: 267345909}
   - component: {fileID: 267345911}
   - component: {fileID: 267345910}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9972,7 +9973,7 @@ GameObject:
   - component: {fileID: 285955967}
   - component: {fileID: 285955969}
   - component: {fileID: 285955968}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11582,7 +11583,7 @@ GameObject:
   - component: {fileID: 344886051}
   - component: {fileID: 344886053}
   - component: {fileID: 344886052}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11762,7 +11763,7 @@ GameObject:
   - component: {fileID: 347974941}
   - component: {fileID: 347974943}
   - component: {fileID: 347974942}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Pipe Collar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12393,7 +12394,7 @@ GameObject:
   - component: {fileID: 356803508}
   - component: {fileID: 356803510}
   - component: {fileID: 356803509}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12573,7 +12574,7 @@ GameObject:
   - component: {fileID: 362437062}
   - component: {fileID: 362437064}
   - component: {fileID: 362437063}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12814,7 +12815,7 @@ GameObject:
   - component: {fileID: 371223199}
   - component: {fileID: 371223201}
   - component: {fileID: 371223200}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14120,7 +14121,7 @@ GameObject:
   - component: {fileID: 407278862}
   - component: {fileID: 407278864}
   - component: {fileID: 407278863}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14210,7 +14211,7 @@ GameObject:
   - component: {fileID: 408411982}
   - component: {fileID: 408411984}
   - component: {fileID: 408411983}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14623,7 +14624,7 @@ GameObject:
   - component: {fileID: 423838854}
   - component: {fileID: 423838856}
   - component: {fileID: 423838855}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14856,7 +14857,7 @@ GameObject:
   - component: {fileID: 432987060}
   - component: {fileID: 432987062}
   - component: {fileID: 432987061}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15216,7 +15217,7 @@ GameObject:
   - component: {fileID: 442390580}
   - component: {fileID: 442390582}
   - component: {fileID: 442390581}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16191,7 +16192,7 @@ GameObject:
   - component: {fileID: 460310449}
   - component: {fileID: 460310451}
   - component: {fileID: 460310450}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16731,7 +16732,7 @@ GameObject:
   - component: {fileID: 472807356}
   - component: {fileID: 472807358}
   - component: {fileID: 472807357}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17214,7 +17215,7 @@ GameObject:
   - component: {fileID: 495421248}
   - component: {fileID: 495421250}
   - component: {fileID: 495421249}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17752,7 +17753,7 @@ GameObject:
   - component: {fileID: 512356978}
   - component: {fileID: 512356980}
   - component: {fileID: 512356979}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17842,7 +17843,7 @@ GameObject:
   - component: {fileID: 516021751}
   - component: {fileID: 516021753}
   - component: {fileID: 516021752}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -18382,7 +18383,7 @@ GameObject:
   - component: {fileID: 525409683}
   - component: {fileID: 525409685}
   - component: {fileID: 525409684}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19946,7 +19947,7 @@ GameObject:
   - component: {fileID: 572313805}
   - component: {fileID: 572313807}
   - component: {fileID: 572313806}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Pipe Collar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -20576,7 +20577,7 @@ GameObject:
   - component: {fileID: 584161414}
   - component: {fileID: 584161416}
   - component: {fileID: 584161415}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Backing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21746,7 +21747,7 @@ GameObject:
   - component: {fileID: 625983074}
   - component: {fileID: 625983076}
   - component: {fileID: 625983075}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22196,7 +22197,7 @@ GameObject:
   - component: {fileID: 636300460}
   - component: {fileID: 636300462}
   - component: {fileID: 636300461}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Pipe Collar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23276,7 +23277,7 @@ GameObject:
   - component: {fileID: 662645573}
   - component: {fileID: 662645575}
   - component: {fileID: 662645574}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23456,7 +23457,7 @@ GameObject:
   - component: {fileID: 665805445}
   - component: {fileID: 665805447}
   - component: {fileID: 665805446}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Skirting
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23636,7 +23637,7 @@ GameObject:
   - component: {fileID: 668284869}
   - component: {fileID: 668284871}
   - component: {fileID: 668284870}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24125,7 +24126,7 @@ GameObject:
   - component: {fileID: 704923780}
   - component: {fileID: 704923782}
   - component: {fileID: 704923781}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24845,7 +24846,7 @@ GameObject:
   - component: {fileID: 720622626}
   - component: {fileID: 720622628}
   - component: {fileID: 720622627}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -26152,7 +26153,7 @@ GameObject:
   - component: {fileID: 771115464}
   - component: {fileID: 771115466}
   - component: {fileID: 771115465}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -26602,7 +26603,7 @@ GameObject:
   - component: {fileID: 782592692}
   - component: {fileID: 782592694}
   - component: {fileID: 782592693}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -26782,7 +26783,7 @@ GameObject:
   - component: {fileID: 784883507}
   - component: {fileID: 784883509}
   - component: {fileID: 784883508}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -26872,7 +26873,7 @@ GameObject:
   - component: {fileID: 786189708}
   - component: {fileID: 786189710}
   - component: {fileID: 786189709}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -27052,7 +27053,7 @@ GameObject:
   - component: {fileID: 787735123}
   - component: {fileID: 787735125}
   - component: {fileID: 787735124}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Pipe Collar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28613,7 +28614,7 @@ GameObject:
   - component: {fileID: 839002269}
   - component: {fileID: 839002271}
   - component: {fileID: 839002270}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29886,7 +29887,7 @@ GameObject:
   - component: {fileID: 880730935}
   - component: {fileID: 880730937}
   - component: {fileID: 880730936}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Upper Feed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -31556,7 +31557,7 @@ GameObject:
   - component: {fileID: 944332598}
   - component: {fileID: 944332600}
   - component: {fileID: 944332599}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -31736,7 +31737,7 @@ GameObject:
   - component: {fileID: 949655073}
   - component: {fileID: 949655075}
   - component: {fileID: 949655074}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -32006,7 +32007,7 @@ GameObject:
   - component: {fileID: 952934348}
   - component: {fileID: 952934350}
   - component: {fileID: 952934349}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -33888,6 +33889,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8367344418834093748, guid: fdb0c555c5f504f949fdeb0539b5b1b8, type: 3}
+      propertyPath: m_Layer
+      value: 28
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -33909,7 +33914,7 @@ GameObject:
   - component: {fileID: 1030691804}
   - component: {fileID: 1030691806}
   - component: {fileID: 1030691805}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -35104,7 +35109,7 @@ GameObject:
   - component: {fileID: 1053662464}
   - component: {fileID: 1053662466}
   - component: {fileID: 1053662465}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -35194,7 +35199,7 @@ GameObject:
   - component: {fileID: 1054098828}
   - component: {fileID: 1054098830}
   - component: {fileID: 1054098829}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -36438,6 +36443,103 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1076220633}
   m_Mesh: {fileID: -4471176196572809229, guid: 58ae7d1f487fc462e95b9c4f0d57179a, type: 2}
+--- !u!1 &1081939902
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1081939903}
+  - component: {fileID: 1081939904}
+  m_Layer: 0
+  m_Name: Gate Figure Fill
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1081939903
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081939902}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.1870782, y: -0.21635202, z: 0.117041275, w: 0.95104945}
+  m_LocalPosition: {x: 0.536322, y: -1.0892467, z: 0.98959595}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 103164836}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!108 &1081939904
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081939902}
+  m_Enabled: 1
+  serializedVersion: 12
+  m_Type: 0
+  m_Color: {r: 1, g: 0.9019608, b: 0.7254902, a: 1}
+  m_Intensity: 4.3
+  m_Range: 2.08
+  m_SpotAngle: 73
+  m_InnerSpotAngle: 40.15
+  m_CookieSize2D: {x: 0.5, y: 0.5}
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 1
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShadowRadius: 0
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
 --- !u!1 &1086347936
 GameObject:
   m_ObjectHideFlags: 0
@@ -36449,7 +36551,7 @@ GameObject:
   - component: {fileID: 1086347937}
   - component: {fileID: 1086347939}
   - component: {fileID: 1086347938}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37169,7 +37271,7 @@ GameObject:
   - component: {fileID: 1101808439}
   - component: {fileID: 1101808441}
   - component: {fileID: 1101808440}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37889,7 +37991,7 @@ GameObject:
   - component: {fileID: 1136929327}
   - component: {fileID: 1136929329}
   - component: {fileID: 1136929328}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -38609,7 +38711,7 @@ GameObject:
   - component: {fileID: 1161117946}
   - component: {fileID: 1161117948}
   - component: {fileID: 1161117947}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39631,7 +39733,7 @@ GameObject:
   - component: {fileID: 1182193449}
   - component: {fileID: 1182193451}
   - component: {fileID: 1182193450}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -40705,7 +40807,7 @@ GameObject:
   - component: {fileID: 1232035721}
   - component: {fileID: 1232035723}
   - component: {fileID: 1232035722}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -41060,8 +41162,8 @@ Light:
   serializedVersion: 12
   m_Type: 2
   m_Color: {r: 1, g: 0.9019608, b: 0.7254902, a: 1}
-  m_Intensity: 1.65
-  m_Range: 0.43
+  m_Intensity: 2.55
+  m_Range: 0.42
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize2D: {x: 0.5, y: 0.5}
@@ -41215,7 +41317,7 @@ GameObject:
   - component: {fileID: 1250625104}
   - component: {fileID: 1250625106}
   - component: {fileID: 1250625105}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -41305,7 +41407,7 @@ GameObject:
   - component: {fileID: 1262002070}
   - component: {fileID: 1262002072}
   - component: {fileID: 1262002071}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -41863,7 +41965,8 @@ Transform:
   m_LocalPosition: {x: 1.08, y: 3.13, z: 0.44}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2085103470}
   m_Father: {fileID: 1660333424}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!108 &1276362200
@@ -42346,7 +42449,7 @@ GameObject:
   - component: {fileID: 1305633502}
   - component: {fileID: 1305633504}
   - component: {fileID: 1305633503}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Return Riser
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42616,7 +42719,7 @@ GameObject:
   - component: {fileID: 1318174563}
   - component: {fileID: 1318174565}
   - component: {fileID: 1318174564}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42796,7 +42899,7 @@ GameObject:
   - component: {fileID: 1324029162}
   - component: {fileID: 1324029164}
   - component: {fileID: 1324029163}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42976,7 +43079,7 @@ GameObject:
   - component: {fileID: 1331194053}
   - component: {fileID: 1331194055}
   - component: {fileID: 1331194054}
-  m_Layer: 0
+  m_Layer: 27
   m_Name: Rod Metal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -43231,8 +43334,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1344056264}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.3868612, y: -0.2763196, z: 0.3265082, w: 0.81693226}
-  m_LocalPosition: {x: 0.27435493, y: -2.2487507, z: 0.7365116}
+  m_LocalRotation: {x: -0.3793394, y: -0.2633772, z: 0.31919792, w: 0.8275547}
+  m_LocalPosition: {x: 0.09217292, y: -2.1889343, z: 0.6903404}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -43249,10 +43352,10 @@ Light:
   serializedVersion: 12
   m_Type: 0
   m_Color: {r: 1, g: 0.83137256, b: 0.60784316, a: 1}
-  m_Intensity: 3.6
-  m_Range: 2.46
-  m_SpotAngle: 70
-  m_InnerSpotAngle: 38.5
+  m_Intensity: 6.3
+  m_Range: 2.36
+  m_SpotAngle: 86
+  m_InnerSpotAngle: 47.3
   m_CookieSize2D: {x: 0.5, y: 0.5}
   m_Shadows:
     m_Type: 0
@@ -43283,7 +43386,7 @@ Light:
   m_Cookie: {fileID: 0}
   m_DrawHalo: 0
   m_Flare: {fileID: 0}
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -43404,7 +43507,7 @@ GameObject:
   - component: {fileID: 1348705645}
   - component: {fileID: 1348705647}
   - component: {fileID: 1348705646}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Pipe Collar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -43584,7 +43687,7 @@ GameObject:
   - component: {fileID: 1358964969}
   - component: {fileID: 1358964971}
   - component: {fileID: 1358964970}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44034,7 +44137,7 @@ GameObject:
   - component: {fileID: 1368300712}
   - component: {fileID: 1368300714}
   - component: {fileID: 1368300713}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44304,7 +44407,7 @@ GameObject:
   - component: {fileID: 1381292198}
   - component: {fileID: 1381292200}
   - component: {fileID: 1381292199}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44787,7 +44890,7 @@ GameObject:
   - component: {fileID: 1393170166}
   - component: {fileID: 1393170168}
   - component: {fileID: 1393170167}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Skirting
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45220,7 +45323,7 @@ GameObject:
   - component: {fileID: 1409558351}
   - component: {fileID: 1409558353}
   - component: {fileID: 1409558352}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45400,7 +45503,7 @@ GameObject:
   - component: {fileID: 1414170850}
   - component: {fileID: 1414170852}
   - component: {fileID: 1414170851}
-  m_Layer: 0
+  m_Layer: 27
   m_Name: Rod Metal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -46660,7 +46763,7 @@ GameObject:
   - component: {fileID: 1444864797}
   - component: {fileID: 1444864799}
   - component: {fileID: 1444864798}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -47553,7 +47656,7 @@ GameObject:
   - component: {fileID: 1468749657}
   - component: {fileID: 1468749659}
   - component: {fileID: 1468749658}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Pipe Collar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -47643,7 +47746,7 @@ GameObject:
   - component: {fileID: 1470013295}
   - component: {fileID: 1470013297}
   - component: {fileID: 1470013296}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -47843,6 +47946,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1344056265}
+  - {fileID: 1969346362}
   m_Father: {fileID: 1660333424}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!108 &1477187310
@@ -48461,7 +48565,7 @@ GameObject:
   - component: {fileID: 1496840367}
   - component: {fileID: 1496840369}
   - component: {fileID: 1496840368}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Backing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -49851,7 +49955,7 @@ GameObject:
   - component: {fileID: 1533941960}
   - component: {fileID: 1533941962}
   - component: {fileID: 1533941961}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -50391,7 +50495,7 @@ GameObject:
   - component: {fileID: 1540515873}
   - component: {fileID: 1540515875}
   - component: {fileID: 1540515874}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -51111,7 +51215,7 @@ GameObject:
   - component: {fileID: 1559521288}
   - component: {fileID: 1559521290}
   - component: {fileID: 1559521289}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -51561,7 +51665,7 @@ GameObject:
   - component: {fileID: 1566515209}
   - component: {fileID: 1566515211}
   - component: {fileID: 1566515210}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Pipe Collar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -51651,7 +51755,7 @@ GameObject:
   - component: {fileID: 1568559470}
   - component: {fileID: 1568559472}
   - component: {fileID: 1568559471}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -51921,7 +52025,7 @@ GameObject:
   - component: {fileID: 1572486662}
   - component: {fileID: 1572486664}
   - component: {fileID: 1572486663}
-  m_Layer: 0
+  m_Layer: 27
   m_Name: Rod Metal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -52191,7 +52295,7 @@ GameObject:
   - component: {fileID: 1576932041}
   - component: {fileID: 1576932043}
   - component: {fileID: 1576932042}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -52551,7 +52655,7 @@ GameObject:
   - component: {fileID: 1589606083}
   - component: {fileID: 1589606085}
   - component: {fileID: 1589606084}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -52641,7 +52745,7 @@ GameObject:
   - component: {fileID: 1590655575}
   - component: {fileID: 1590655577}
   - component: {fileID: 1590655576}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -53382,8 +53486,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1615193443}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.019312948, y: -0.3519249, z: 0.27795961, w: 0.89359635}
-  m_LocalPosition: {x: -0.55616724, y: 1.610056, z: 2.6571786}
+  m_LocalRotation: {x: -0.21953413, y: -0.47740576, z: 0.21849753, w: 0.82228184}
+  m_LocalPosition: {x: -0.4508164, y: 0.96963257, z: 2.5254264}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -53400,10 +53504,10 @@ Light:
   serializedVersion: 12
   m_Type: 0
   m_Color: {r: 0.69411767, g: 0.8039216, b: 0.8235294, a: 1}
-  m_Intensity: 3.05
-  m_Range: 2.4
-  m_SpotAngle: 76
-  m_InnerSpotAngle: 41.8
+  m_Intensity: 6.2
+  m_Range: 3
+  m_SpotAngle: 102
+  m_InnerSpotAngle: 56.100002
   m_CookieSize2D: {x: 0.5, y: 0.5}
   m_Shadows:
     m_Type: 0
@@ -53434,10 +53538,10 @@ Light:
   m_Cookie: {fileID: 0}
   m_DrawHalo: 0
   m_Flare: {fileID: 0}
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 536870912
   m_RenderingLayerMask: 1
   m_Lightmapping: 4
   m_LightShadowCasterMode: 0
@@ -54473,7 +54577,7 @@ GameObject:
   - component: {fileID: 1644112420}
   - component: {fileID: 1644112422}
   - component: {fileID: 1644112421}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -54653,7 +54757,7 @@ GameObject:
   - component: {fileID: 1647407895}
   - component: {fileID: 1647407897}
   - component: {fileID: 1647407896}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -56109,7 +56213,7 @@ GameObject:
   - component: {fileID: 1704308528}
   - component: {fileID: 1704308530}
   - component: {fileID: 1704308529}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -59093,7 +59197,7 @@ GameObject:
   - component: {fileID: 1799211285}
   - component: {fileID: 1799211287}
   - component: {fileID: 1799211286}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Backing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -59453,7 +59557,7 @@ GameObject:
   - component: {fileID: 1807998784}
   - component: {fileID: 1807998786}
   - component: {fileID: 1807998785}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -59856,7 +59960,7 @@ GameObject:
   - component: {fileID: 1823156526}
   - component: {fileID: 1823156528}
   - component: {fileID: 1823156527}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -60306,7 +60410,7 @@ GameObject:
   - component: {fileID: 1839198595}
   - component: {fileID: 1839198597}
   - component: {fileID: 1839198596}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -61213,7 +61317,7 @@ GameObject:
   - component: {fileID: 1871632503}
   - component: {fileID: 1871632505}
   - component: {fileID: 1871632504}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -62963,7 +63067,7 @@ GameObject:
   - component: {fileID: 1924310738}
   - component: {fileID: 1924310740}
   - component: {fileID: 1924310739}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -63817,7 +63921,7 @@ GameObject:
   - component: {fileID: 1946726159}
   - component: {fileID: 1946726161}
   - component: {fileID: 1946726160}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -64210,6 +64314,103 @@ Transform:
   - {fileID: 1503855545}
   m_Father: {fileID: 1888667535}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1969346361
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1969346362}
+  - component: {fileID: 1969346363}
+  m_Layer: 0
+  m_Name: Floor Rod Fill
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1969346362
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1969346361}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.37113348, y: -0.2250628, z: 0.28427958, w: 0.85486364}
+  m_LocalPosition: {x: 0.28688174, y: -2.0085783, z: 1.8559133}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1477187309}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!108 &1969346363
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1969346361}
+  m_Enabled: 1
+  serializedVersion: 12
+  m_Type: 0
+  m_Color: {r: 1, g: 0.9019608, b: 0.7254902, a: 1}
+  m_Intensity: 5.7
+  m_Range: 2.7
+  m_SpotAngle: 97
+  m_InnerSpotAngle: 53.350002
+  m_CookieSize2D: {x: 0.5, y: 0.5}
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 1
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 134217728
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShadowRadius: 0
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
 --- !u!1 &1972378586
 GameObject:
   m_ObjectHideFlags: 0
@@ -65092,7 +65293,7 @@ GameObject:
   - component: {fileID: 2006088460}
   - component: {fileID: 2006088462}
   - component: {fileID: 2006088461}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -65902,7 +66103,7 @@ GameObject:
   - component: {fileID: 2025458023}
   - component: {fileID: 2025458025}
   - component: {fileID: 2025458024}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Main Riser
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -66084,7 +66285,7 @@ GameObject:
   - component: {fileID: 2029912630}
   - component: {fileID: 2029912632}
   - component: {fileID: 2029912631}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67350,7 +67551,7 @@ GameObject:
   - component: {fileID: 2075427976}
   - component: {fileID: 2075427978}
   - component: {fileID: 2075427977}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67440,7 +67641,7 @@ GameObject:
   - component: {fileID: 2075785535}
   - component: {fileID: 2075785537}
   - component: {fileID: 2075785536}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -68059,6 +68260,103 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2084791927}
   m_Mesh: {fileID: 4300000, guid: 2bb22881524c843f5a301c058da4ebee, type: 2}
+--- !u!1 &2085103469
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2085103470}
+  - component: {fileID: 2085103471}
+  m_Layer: 0
+  m_Name: Service Prop Fill
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2085103470
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2085103469}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.24019371, y: -0.29085732, z: 0.13605392, w: 0.91607773}
+  m_LocalPosition: {x: 1.5970718, y: -0.48980626, z: 1.1468009}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1276362199}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!108 &2085103471
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2085103469}
+  m_Enabled: 1
+  serializedVersion: 12
+  m_Type: 0
+  m_Color: {r: 0.69411767, g: 0.8039216, b: 0.8235294, a: 1}
+  m_Intensity: 5
+  m_Range: 4.3
+  m_SpotAngle: 104
+  m_InnerSpotAngle: 57.2
+  m_CookieSize2D: {x: 0.5, y: 0.5}
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 1
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 268435456
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShadowRadius: 0
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
 --- !u!1 &2085534901
 GameObject:
   m_ObjectHideFlags: 0
@@ -69761,7 +70059,7 @@ GameObject:
   - component: {fileID: 2139547797}
   - component: {fileID: 2139547799}
   - component: {fileID: 2139547798}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -69851,7 +70149,7 @@ GameObject:
   - component: {fileID: 2140274126}
   - component: {fileID: 2140274128}
   - component: {fileID: 2140274127}
-  m_Layer: 0
+  m_Layer: 29
   m_Name: Masonry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
