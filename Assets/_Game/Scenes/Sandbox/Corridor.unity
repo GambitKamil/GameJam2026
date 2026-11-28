@@ -22271,6 +22271,108 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1385976308}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1389332658
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1858925168}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.8920001
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_Name
+      value: Prisoner Model
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 41df4cb95092c8542bd62573651dafbe, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_CullingMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1389332661}
+  m_SourcePrefab: {fileID: 100100000, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+--- !u!4 &1389332659 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+  m_PrefabInstance: {fileID: 1389332658}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1389332660 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 65b895b7062960949bcad5f8f212ee8d, type: 3}
+  m_PrefabInstance: {fileID: 1389332658}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1389332661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1389332660}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb8d3e5dc8f06024b97ed99ccb407a09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PrisonerAnimatorBridge
+  walkClipSpeed: 1
+  sneakClipSpeed: 0.6
+  minimumPlaybackRate: 0.25
+  turnDegreesPerSecond: 900
+  legacyVisuals:
+  - {fileID: 1891776873}
+  - {fileID: 1786136249}
+  legacyWakeUp: 1
 --- !u!1 &1392943095
 GameObject:
   m_ObjectHideFlags: 0
@@ -29248,6 +29350,7 @@ Transform:
   - {fileID: 1786136249}
   - {fileID: 1891776873}
   - {fileID: 51633450}
+  - {fileID: 1389332659}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1858925169

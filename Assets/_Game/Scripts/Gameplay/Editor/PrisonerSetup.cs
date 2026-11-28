@@ -346,6 +346,13 @@ public static class PrisonerSetup
         var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath)
             ?? AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
 
+        // Already built: keep it untouched so re-running Setup does not churn the asset in git.
+        string[] required = { "Idle", "Walk", "CrouchIdle", "SneakWalk" };
+        ChildAnimatorState[] existing = controller.layers[0].stateMachine.states;
+        if (controller.parameters.Length == 4 && required.All(name =>
+                existing.Any(s => s.state.name == name && s.state.motion != null)))
+            return;
+
         foreach (var parameter in controller.parameters)
             controller.RemoveParameter(parameter);
         controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
