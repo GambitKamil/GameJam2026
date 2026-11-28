@@ -23,6 +23,7 @@ public sealed class SideViewCamera : MonoBehaviour
     private float lookAheadDirection = 1f;
     private float lookAheadVelocity;
     private Rigidbody targetBody;
+    private Vector3? openingSubject;
 
     private void Awake()
     {
@@ -45,6 +46,18 @@ public sealed class SideViewCamera : MonoBehaviour
     public void StopFramingSubject()
     {
         framingSubject = null;
+    }
+
+    internal void FrameOpening(Vector3? subject, bool snap = false)
+    {
+        openingSubject = subject;
+        if (!snap || !usesSubjectFraming)
+            return;
+
+        Vector3 position = transform.position;
+        position.x = FramingX(position.x, out float size);
+        transform.position = position;
+        view.orthographicSize = size;
     }
 
     private void LateUpdate()
@@ -74,14 +87,15 @@ public sealed class SideViewCamera : MonoBehaviour
     private float FramingX(float x, out float size)
     {
         size = baseOrthographicSize;
-        if (framingSubject == null)
+        if (framingSubject == null && !openingSubject.HasValue)
             return x;
 
         Vector3 center = transform.position;
         center.x = x;
         Vector3 right = transform.right;
         float playerX = Vector3.Dot(target.position - center, right);
-        float subjectX = Vector3.Dot(framingSubject.position - center, right);
+        Vector3 subject = openingSubject ?? framingSubject.position;
+        float subjectX = Vector3.Dot(subject - center, right);
         float left = Mathf.Min(playerX, subjectX);
         float far = Mathf.Max(playerX, subjectX);
         float aspect = Mathf.Max(view.aspect, 0.1f);

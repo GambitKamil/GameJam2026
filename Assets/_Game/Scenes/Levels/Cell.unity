@@ -33014,6 +33014,107 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1005679394}
   m_Mesh: {fileID: -4471176196572809229, guid: 58ae7d1f487fc462e95b9c4f0d57179a, type: 2}
+--- !u!1001 &1008008383
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1451659036}
+    m_Modifications:
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.94
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.94
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.94
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.892
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.62932044
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7771459
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7755316649333884887, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      propertyPath: m_Name
+      value: Quaternius Prisoner
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7755316649333884887, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1008008387}
+  m_SourcePrefab: {fileID: 100100000, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+--- !u!4 &1008008384 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963874521900667861, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+  m_PrefabInstance: {fileID: 1008008383}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &1008008385 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5254261490905967528, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+  m_PrefabInstance: {fileID: 1008008383}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1008008386 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7755316649333884887, guid: 2a43f9e56dad34520b1b5e72ff4722e0, type: 3}
+  m_PrefabInstance: {fileID: 1008008383}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1008008387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1008008386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 560e694432e104db88a13be7b8eeaa48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CellPeasantVisual
+  avatar: {fileID: 1008008385}
+  scale: 0.94
 --- !u!1 &1012796900
 GameObject:
   m_ObjectHideFlags: 0
@@ -46540,6 +46641,7 @@ Transform:
   m_Children:
   - {fileID: 1629155468}
   - {fileID: 84990672}
+  - {fileID: 1008008384}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &1451659037
@@ -46627,6 +46729,7 @@ MonoBehaviour:
   hair: {fileID: 316110677}
   eye: {fileID: 1026406270}
   bunkMattress: {fileID: 1975028645}
+  peasantVisual: {fileID: 1008008387}
 --- !u!82 &1451659040
 AudioSource:
   m_ObjectHideFlags: 0

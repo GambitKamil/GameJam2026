@@ -16,6 +16,7 @@ public sealed partial class CellMotion : MonoBehaviour
     [SerializeField] private Transform hair;
     [SerializeField] private Transform eye;
     [SerializeField] private Renderer bunkMattress;
+    [SerializeField] private CellPeasantVisual peasantVisual;
 
     private SideViewPlayer player;
     private CellAnimationLibrary library;
@@ -64,6 +65,9 @@ public sealed partial class CellMotion : MonoBehaviour
         torso = Pivot("Torso at Hips", figure.TransformPoint(hips), figure.Find("Jacket"),
             figure.Find("Jacket Seam"), shoulder, neck);
         boot = MakeFootstep();
+        if (peasantVisual != null)
+            peasantVisual.Bind(figure, torso, neck, forearm, hand, nearBoot, farBoot,
+                nearFootContact.SoleOffset, farFootContact.SoleOffset);
     }
 
     private Transform Pivot(string label, Vector3 position, params Transform[] parts)
@@ -93,7 +97,7 @@ public sealed partial class CellMotion : MonoBehaviour
         handTargetWeight = Mathf.Clamp01(weight);
     }
 
-    public Vector3 HandPosition => hand.position;
+    public Vector3 HandPosition => peasantVisual != null ? peasantVisual.Grip : hand.position;
     public Vector3 ThrowOrigin(Vector3 direction) => HandPosition;
 
     public void Hold(GameObject template)
@@ -130,7 +134,7 @@ public sealed partial class CellMotion : MonoBehaviour
             armAngle = 138f * Mathf.Clamp01(Mathf.Min(elapsed / 0.18f, (0.68f - elapsed) / 0.19f));
             chew = elapsed >= 0.21f ? Mathf.Sin(elapsed * 51f) * 8f : 0f;
             bite.SetActive(elapsed < 0.25f);
-            bite.transform.position = hand.position;
+            bite.transform.position = HandPosition;
             yield return null;
         }
 
@@ -190,7 +194,10 @@ public sealed partial class CellMotion : MonoBehaviour
     private void LateUpdate()
     {
         if (WakingUp)
+        {
+            ApplyWakeVisual();
             return;
+        }
 
         float speed = UpdateLocomotion();
         UpdateFigureFacing();
@@ -235,8 +242,11 @@ public sealed partial class CellMotion : MonoBehaviour
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
         LeanTowardHandTarget();
         ApplyAimPose();
+        peasantVisual?.Apply(swing, heldBread != null || carryingRod || handTargetWeight > 0.3f);
         if (heldBread != null)
-            heldBread.transform.position = hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
+            heldBread.transform.position = peasantVisual != null
+                ? HandPosition
+                : hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
     }
 
     private static AudioClip MakeFootstep()

@@ -21,6 +21,9 @@ public sealed partial class CellMotion
         wakeRod = rod;
     }
 
+    private SideViewCamera openingCamera;
+    private float seatedBlend;
+    private float lyingBlend;
     private Vector3 wakeHips;
     private Vector3 wakeNearHome;
     private Vector3 wakeFarHome;
@@ -31,6 +34,8 @@ public sealed partial class CellMotion
             yield break;
 
         Busy = WakingUp = true;
+        if (peasantVisual != null && Camera.main != null)
+            openingCamera = Camera.main.GetComponent<SideViewCamera>();
         wakeHips = (frontLeg.Hip + backLeg.Hip) * 0.5f;
         wakeNearHome = nearBoot.localPosition;
         wakeFarHome = farBoot.localPosition;
@@ -62,16 +67,21 @@ public sealed partial class CellMotion
         if (!float.IsPositiveInfinity(bottom))
             lying.y += Mathf.Max(0f, mattress.max.y + 0.012f - bottom);
         PoseWakeLocal(lying, lyingRotation, tuck, -3f, 18f, wakeNearHome, wakeFarHome);
+        lyingBlend = 1f;
+        ApplyWakeVisual(true);
         yield return new WaitForSeconds(0.15f * wakeDurationScale);
 
         var rolled = new Vector3(standing.x, Mathf.Max(lying.y, mattress.max.y + 0.26f), mattress.min.z + 0.27f);
         Quaternion rolledRotation = Quaternion.Euler(0f, 20f, 72f);
         Vector3 nearTucked = wakeNearHome + new Vector3(0.24f, 0.04f, 0f);
         Vector3 farTucked = wakeFarHome + new Vector3(0.06f, 0.04f, 0f);
-        yield return MoveWake(0.42f, t => PoseWakeLocal(
-            Vector3.Lerp(lying, rolled, t), Quaternion.Slerp(lyingRotation, rolledRotation, t),
-            tuck * (1f - t), Mathf.Lerp(-3f, -16f, t), Mathf.Lerp(18f, 40f, t),
-            Vector3.Lerp(wakeNearHome, nearTucked, t), Vector3.Lerp(wakeFarHome, farTucked, t)));
+        yield return MoveWake(0.42f, t =>
+        {
+            lyingBlend = 1f - t;
+            PoseWakeLocal(Vector3.Lerp(lying, rolled, t), Quaternion.Slerp(lyingRotation, rolledRotation, t),
+                tuck * (1f - t), Mathf.Lerp(-3f, -16f, t), Mathf.Lerp(18f, 40f, t),
+                Vector3.Lerp(wakeNearHome, nearTucked, t), Vector3.Lerp(wakeFarHome, farTucked, t));
+        });
 
         Vector3 nearRolled = nearBoot.position;
         Vector3 farRolled = farBoot.position;
@@ -81,6 +91,7 @@ public sealed partial class CellMotion
         var farDangling = new Vector3(seated.x + 0.12f, farFoot.y + 0.27f, mattress.min.z - 0.30f);
         yield return MoveWake(0.65f, t =>
         {
+            seatedBlend = t;
             Quaternion rotation = Quaternion.Slerp(rolledRotation, seatedRotation, t);
             PoseWakeWorld(Vector3.Lerp(rolled, seated, t), rotation, Mathf.Lerp(-16f, -10f, t),
                 Mathf.Lerp(40f, -24f, t),
@@ -92,6 +103,7 @@ public sealed partial class CellMotion
         Quaternion plantedRotation = Quaternion.Euler(0f, 59f, 0f);
         yield return MoveWake(0.59f, t =>
         {
+            seatedBlend = 1f - t;
             float farProgress = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 0.78f, t));
             Quaternion rotation = Quaternion.Slerp(seatedRotation, plantedRotation, t);
             SetWakeCapsule(capsule, capsuleHeight, capsuleCenter, t * 0.28f);
@@ -139,8 +151,19 @@ public sealed partial class CellMotion
             hasFootContacts = true;
         }
 
+        openingCamera?.FrameOpening(null);
         WakingUp = false;
         EndAction();
+    }
+
+    private void ApplyWakeVisual(bool snapCamera = false)
+    {
+        if (peasantVisual == null)
+            return;
+
+        peasantVisual.Apply(0f, false, seatedBlend);
+        peasantVisual.transform.position -= Vector3.up * (lyingBlend * 0.125f);
+        openingCamera?.FrameOpening(peasantVisual.HeadPosition, snapCamera);
     }
 
     private IEnumerator MoveWake(float duration, Action<float> sample)
