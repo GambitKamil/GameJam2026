@@ -8,5 +8,14 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Game/Scenes/Main.unity
     guid: a0a50314648b746e1850d7ceed8b5d66
+  - enabled: 1
+    path: Assets/_Game/Scenes/Levels/Cell.unity
+    guid: 5d398bf97c83a7a4fb04c9f0d5a5ccfa
+  - enabled: 1
+    path: Assets/_Game/Scenes/Sandbox/Corridor.unity
+    guid: 0c7d8602f0b844aeea15da4cc3c3a6f8
+  - enabled: 1
+    path: Assets/_Game/Scenes/Levels/Kitchen.unity
+    guid: 725837bdea2e54550863e40abeb0d972
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
