@@ -18,8 +18,12 @@ public sealed class BreadSupply : MonoBehaviour
     private const float CeilingHeight = 3.70f;
     private const float LeftWall = -7.27f;
     private const float RightWall = 7.08f;
-    private static readonly Color NormalGuide = new Color(1f, 0.85f, 0.55f, 0.9f);
-    private static readonly Color KeyGuide = new Color(0.53f, 0.94f, 0.63f, 0.95f);
+    // A faint chalk-white hint of the throw, not a laser: only the first part of the arc, fading out.
+    // On a throw that will reach the keys it gets a little brighter and longer, nothing more.
+    private static readonly Color NormalGuide = new Color(0.86f, 0.88f, 0.9f, 0.22f);
+    private static readonly Color KeyGuide = new Color(0.95f, 0.93f, 0.86f, 0.42f);
+    private const float GuideShare = 0.38f;
+    private const float KeyGuideShare = 0.6f;
 
     private int remaining;
     private Vector3 loafScale;
@@ -154,17 +158,24 @@ public sealed class BreadSupply : MonoBehaviour
             preview = guide.AddComponent<LineRenderer>();
             previewMaterial = new Material(Shader.Find("Sprites/Default"));
             preview.sharedMaterial = previewMaterial;
-            preview.startWidth = 0.035f;
-            preview.endWidth = 0.018f;
+            preview.startWidth = 0.014f;
+            preview.endWidth = 0.004f;
+            preview.numCapVertices = 2;
         }
 
         int catchFrame = Simulate(origin, velocity, guidePoints);
         preview.enabled = true;
-        int count = catchFrame < 0 ? guidePoints.Count : catchFrame + 1;
+        bool onKeys = catchFrame >= 0;
+        int full = onKeys ? catchFrame + 1 : guidePoints.Count;
+        int count = Mathf.Clamp(Mathf.CeilToInt(full * (onKeys ? KeyGuideShare : GuideShare)), 2, full);
         preview.positionCount = count;
         for (int i = 0; i < count; i++)
             preview.SetPosition(i, guidePoints[i]);
-        preview.startColor = preview.endColor = catchFrame < 0 ? NormalGuide : KeyGuide;
+        Color tint = onKeys ? KeyGuide : NormalGuide;
+        var fade = new Gradient();
+        fade.SetKeys(new[] { new GradientColorKey(tint, 0f), new GradientColorKey(tint, 1f) },
+            new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(tint.a, 0.12f), new GradientAlphaKey(tint.a * 0.6f, 0.55f), new GradientAlphaKey(0f, 1f) });
+        preview.colorGradient = fade;
     }
 
     private void Launch(Vector3 origin, Vector3 velocity)

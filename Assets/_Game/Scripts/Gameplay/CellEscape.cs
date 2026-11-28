@@ -272,13 +272,42 @@ public sealed class CellEscape : MonoBehaviour
         if (stage == Stage.ExitOpen && player.transform.position.x > exit.position.x + 0.45f)
         {
             stage = Stage.Complete;
-            if (GameManager.Instance != null && Application.CanStreamedLevelBeLoaded(GameManager.CorridorScene))
-                GameManager.Instance.CompleteCurrentLevel();
+            StartCoroutine(WalkThroughExit());
             return;
         }
 
         if (Input.GetKeyDown(KeyCode.E))
             Interact();
+    }
+
+    // The prisoner keeps walking through the open door while the screen fades,
+    // instead of vanishing on the threshold. The corridor picks him up stepping out of its cell-block door.
+    private IEnumerator WalkThroughExit()
+    {
+        player.SetDoorwayWalk(true);
+        motion.Face(1f);
+        Transform actor = player.transform;
+        Vector3 from = actor.position;
+        Vector3 to = from + Vector3.right * 1.4f;
+        const float duration = 0.9f;
+        bool handedOver = false;
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+        {
+            actor.position = Vector3.Lerp(from, to, elapsed / duration);
+            if (!handedOver && elapsed > 0.3f)
+                handedOver = HandOver();
+            yield return null;
+        }
+        actor.position = to;
+        if (!handedOver)
+            HandOver();
+    }
+
+    private static bool HandOver()
+    {
+        if (GameManager.Instance != null && Application.CanStreamedLevelBeLoaded(GameManager.CorridorScene))
+            GameManager.Instance.CompleteCurrentLevel();
+        return true;
     }
 
     private void Wander()
@@ -631,11 +660,11 @@ public sealed class CellEscape : MonoBehaviour
         else if (!moving && stage == Stage.GateOpen && Near(exit, 1f))
             prompt = "E - Open door";
         else if (!moving && stage == Stage.KeyWithinReach && Near(key, 0.72f))
-            prompt = "E - Pick up key and unlock gate";
+            prompt = "E - Pick up the keys and unlock gate";
         else if (!moving && stage == Stage.KeyBehindGate && Near(gate, 1f))
-            prompt = haveRod ? "E - Hook the key" : "The rod is under the bunk.";
+            prompt = haveRod ? "E - Snag the keys with the rope" : "There is a sheet rope under the bunk.";
         else if (!haveRod && stage == Stage.KeyBehindGate && Near(rod, 0.75f))
-            prompt = "E - Take the rod    Hold Ctrl - Crouch";
+            prompt = "E - Take the sheet rope    Hold Ctrl - Crouch";
         else if (bread != null && bread.IsHoldingPiece)
             prompt = "Hold left mouse to aim. Release to throw.";
         else if (bread != null && bread.IsNearTable() && stage == Stage.FindBread)
@@ -643,7 +672,7 @@ public sealed class CellEscape : MonoBehaviour
         else if (bread != null && !bread.HasBread && !bread.ThrowInProgress && stage == Stage.FindBread)
             prompt = "No bread left.  R - Restart";
         else if (stage == Stage.FindBread && Near(gate, 1f))
-            prompt = "Locked. Aim at the key until the arc turns green.";
+            prompt = "Locked. The keys hang beyond the bars.";
 
         if (prompt != null)
             GUI.Box(new Rect((Screen.width - 380) * 0.5f, Screen.height - 70, 380, 30), prompt);
