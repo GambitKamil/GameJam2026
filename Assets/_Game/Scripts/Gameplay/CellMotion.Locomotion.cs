@@ -37,7 +37,9 @@ public sealed partial class CellMotion
     {
         float dt = Time.deltaTime;
         Vector3 position = transform.position;
-        float displacement = hasLocomotionSample ? position.x - previousLocomotionPosition.x : 0f;
+        float displacement = hasLocomotionSample
+            ? Vector3.Dot(position - previousLocomotionPosition, transform.right)
+            : 0f;
         hasLocomotionSample = true;
         previousLocomotionPosition = position;
 
@@ -153,7 +155,7 @@ public sealed partial class CellMotion
     private FootContact OtherFoot(FootContact foot) => foot == nearFootContact ? farFootContact : nearFootContact;
 
     private float Behind(FootContact foot, float direction) =>
-        (figure.TransformPoint(foot.Leg.BootHome).x - foot.Position.x) * direction;
+        Vector3.Dot(figure.TransformPoint(foot.Leg.BootHome) - foot.Position, transform.right) * direction;
 
     private void ProgressFootstep()
     {
@@ -162,11 +164,16 @@ public sealed partial class CellMotion
         foot.Progress += Time.deltaTime / swingTime;
         float t = Mathf.Clamp01(foot.Progress);
         Vector3 landing = figure.TransformPoint(foot.Leg.BootHome);
+        Vector3 strideAxis = transform.right;
         float normalizedSpeed = Mathf.Clamp01(Mathf.Abs(motionVelocity) / player.WalkSpeed);
-        landing.x += motionVelocity * (1f - t) * swingTime;
-        landing.x += Mathf.Sign(motionVelocity) * maximumStrideLead * normalizedSpeed;
+        float lead = motionVelocity * (1f - t) * swingTime
+            + Mathf.Sign(motionVelocity) * maximumStrideLead * normalizedSpeed;
+        landing += strideAxis * lead;
         if (Busy)
-            landing.x = Mathf.MoveTowards(landing.x, foot.Start.x, 0.06f);
+        {
+            float backToStart = Vector3.Dot(foot.Start - landing, strideAxis);
+            landing += strideAxis * Mathf.Clamp(backToStart, -0.06f, 0.06f);
+        }
 
         foot.Goal = firstSwingFrame ? landing : Vector3.Lerp(foot.Goal, landing, 1f - Mathf.Exp(-26f * Time.deltaTime));
         if (floorRodActive && wakeRod != null && (wakeRod.position != sampledRodPosition || wakeRod.rotation != sampledRodRotation))

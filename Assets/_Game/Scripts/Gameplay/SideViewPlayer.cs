@@ -46,6 +46,22 @@ public sealed class SideViewPlayer : MonoBehaviour
         Crouching = cellMotion != null && canRead && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
     }
 
+    internal void SetDoorwayWalk(bool active)
+    {
+        moveInput = 0f;
+        Crouching = false;
+        if (active)
+        {
+            IsGrounded = true;
+            body.linearVelocity = Vector3.zero;
+            body.interpolation = RigidbodyInterpolation.None;
+        }
+        body.isKinematic = active;
+        if (!active)
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+        enabled = !active;
+    }
+
     private void FixedUpdate()
     {
         Vector3 velocity = body.linearVelocity;

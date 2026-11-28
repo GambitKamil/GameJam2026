@@ -8,6 +8,7 @@ public sealed class FreezerEscape : MonoBehaviour
     private enum Phase { Kitchen, Trapped, DoorOpen, Frozen, Escaped }
 
     [SerializeField] private SideViewPlayer player;
+    [SerializeField] private KitchenPassageDoor entranceDoor;
     [SerializeField] private Transform freezerDoor;
     [SerializeField] private Transform brokenRelease;
     [SerializeField] private Transform leverHandle;
@@ -49,6 +50,7 @@ public sealed class FreezerEscape : MonoBehaviour
     private Coroutine climb;
     private Coroutine leverPull;
     private bool resetting;
+    private bool arriving;
 
     private bool ColdActive => phase is Phase.Trapped or Phase.DoorOpen;
     private float SoleOffset => capsule.center.y - capsule.height * 0.5f;
@@ -74,11 +76,26 @@ public sealed class FreezerEscape : MonoBehaviour
     {
         Transform[] playerParts = player.GetComponentsInChildren<Transform>();
         torso = System.Array.Find(playerParts, part => part.name == "Torso at Hips");
+        if (!arriving)
+            entranceDoor.GetComponent<LevelEntrance>().CompleteEntrance();
+    }
+
+    internal void EnterFromCorridor()
+    {
+        StartCoroutine(WalkIntoKitchen());
+    }
+
+    private IEnumerator WalkIntoKitchen()
+    {
+        arriving = true;
+        yield return entranceDoor.Arrive(player);
+        arriving = false;
+        entranceDoor.GetComponent<LevelEntrance>().CompleteEntrance();
     }
 
     private void Update()
     {
-        if (resetting)
+        if (resetting || arriving)
             return;
 
         if (Input.GetKeyDown(KeyCode.R) && phase != Phase.Kitchen && GameManager.Instance == null)

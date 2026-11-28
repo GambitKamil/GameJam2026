@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,6 +12,7 @@ public sealed class PassageEscape : MonoBehaviour
     [SerializeField] private ServiceCart cart;
     [SerializeField] private PlateGate gate;
     [SerializeField] private Transform exit;
+    [SerializeField] private KitchenPassageDoor kitchenDoor;
     [SerializeField] private DetectionMeter meter;
     [SerializeField] private DetectionVignette vignette;
     [SerializeField] private float pushSpeed = 2.2f;
@@ -31,6 +33,7 @@ public sealed class PassageEscape : MonoBehaviour
     private bool holding;
     private int side = 1;
     private bool escaped;
+    private bool enteringKitchen;
     private float exposure;
     private float lostTime;
     private float noteTime;
@@ -59,7 +62,7 @@ public sealed class PassageEscape : MonoBehaviour
     private void Update()
     {
         float dt = Time.deltaTime;
-        if (!SideViewPlayer.CanReadInput) return;
+        if (enteringKitchen || !SideViewPlayer.CanReadInput) return;
         if (lostTime > 0f)
         {
             lostTime -= dt;
@@ -96,22 +99,47 @@ public sealed class PassageEscape : MonoBehaviour
         if (!sawStart && body.position.x > start.x + 3f) sawStart = true;
         if (body.position.x >= exit.position.x)
         {
-            escaped = true;
             exposure = 0f;
             if (meter != null) meter.Level = 0f;
             if (vignette != null) vignette.Level = 0f;
             Release();
-            Freeze(true);
-            if (GameManager.Instance != null)
+            if (GameManager.Instance != null || Application.CanStreamedLevelBeLoaded(GameManager.KitchenScene))
+                StartCoroutine(EnterKitchen());
+            else
             {
-                GameManager.Instance.CompleteCurrentLevel();
-            }
-            else if (Application.CanStreamedLevelBeLoaded(GameManager.KitchenScene))
-            {
-                SceneManager.LoadSceneAsync(GameManager.KitchenScene);
-                enabled = false;
+                escaped = true;
+                Freeze(true);
             }
         }
+    }
+
+    private IEnumerator EnterKitchen()
+    {
+        enteringKitchen = true;
+        yield return kitchenDoor.Leave(player);
+        var game = GameManager.Instance;
+        if (game == null)
+            yield return kitchenDoor.FadeOut();
+
+        SceneManager.sceneLoaded += OnLeavingCorridor;
+        if (game != null)
+            game.CompleteCurrentLevel();
+        else
+            SceneManager.LoadSceneAsync(GameManager.KitchenScene);
+    }
+
+    private static void OnLeavingCorridor(Scene scene, LoadSceneMode mode)
+    {
+        if (mode != LoadSceneMode.Single) return;
+        SceneManager.sceneLoaded -= OnLeavingCorridor;
+        if (scene.name == GameManager.KitchenScene)
+            FindFirstObjectByType<FreezerEscape>()?.EnterFromCorridor();
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSceneCallback()
+    {
+        SceneManager.sceneLoaded -= OnLeavingCorridor;
     }
 
     private void UpdateExposure(float dt)
@@ -241,6 +269,7 @@ public sealed class PassageEscape : MonoBehaviour
 
     private string Prompt()
     {
+        if (enteringKitchen) return null;
         if (lostTime > 0f) return note;
         if (escaped) return GameManager.Instance == null ? "Corridor cleared     /     R   Play again" : null;
         if (holding && gate.CartOnPlate) return "E   Release cart to pass the gate";
