@@ -23,7 +23,8 @@ public sealed class CellMotion : MonoBehaviour
     private CellAnimationLibrary.Motion gesture;
     private float gestureStart;
     private float gestureDuration;
-    private float wakeStandProgress = float.NaN;
+    private Renderer[] wakeRenderers;
+    private Bounds wakeBedBounds;
     private float crouchBlend;
     private float previousSpeed;
     private float lean;
@@ -82,28 +83,35 @@ public sealed class CellMotion : MonoBehaviour
             yield break;
 
         Busy = WakingUp = true;
+        wakeRenderers = figure.GetComponentsInChildren<Renderer>();
         Bounds mattress = bunkMattress.bounds;
-        Vector3 hips = (frontLeg.Hip + backLeg.Hip) * 0.5f;
-        Vector3 standing = figure.TransformPoint(hips);
-        Vector3 lying = new Vector3(mattress.center.x, mattress.max.y + 0.16f, mattress.center.z);
-        Vector3 sitting = new Vector3(standing.x, mattress.max.y + 0.10f, mattress.min.z - 0.06f);
-        Vector3 planted = standing - Vector3.up * (0.43f * 0.82f);
-        Quaternion onSide = Quaternion.Euler(0f, 0f, 90f);
-        Quaternion atEdge = Quaternion.Euler(0f, 90f, 0f);
-        Quaternion feetDown = Quaternion.Euler(0f, 22f, 0f);
+        wakeBedBounds = mattress;
+        Transform frame = bunkMattress.transform.parent.Find("Bed Frame");
+        if (frame != null && frame.TryGetComponent(out Renderer bedFrame))
+            wakeBedBounds.Encapsulate(bedFrame.bounds);
 
-        PoseWakeUp(lying, onSide, 0.12f, 12f);
-        yield return new WaitForSeconds(0.14f);
-        yield return MoveWakePose(lying, sitting, onSide, atEdge, 0.12f, 0.88f, 12f, -40f, 0.55f);
-        yield return new WaitForSeconds(0.16f);
-        yield return MoveWakePose(sitting, planted, atEdge, feetDown, 0.88f, 0.82f, -40f, 28f, 0.45f);
+        Vector3 standing = figure.TransformPoint((frontLeg.Hip + backLeg.Hip) * 0.5f);
+        Vector3 lying = new Vector3(mattress.center.x, mattress.max.y + 0.12f, mattress.center.z);
+        Vector3 side = new Vector3(mattress.center.x - 0.04f, mattress.max.y + 0.18f, mattress.min.z + 0.28f);
+        Vector3 seated = new Vector3(standing.x, mattress.max.y + 0.12f, wakeBedBounds.min.z - 0.22f);
+        const float seatedCrouch = 0.84f;
+        Vector3 planted = standing + WakeHipOffset(seatedCrouch);
+        Quaternion lyingRotation = Quaternion.Euler(0f, 0f, 90f);
+        Quaternion turnedOnSide = Quaternion.Euler(23f, 13f, 82f);
+        Quaternion feetOverEdge = Quaternion.Euler(0f, 82f, 0f);
+
+        PoseWakeUp(lying, lyingRotation, 0.09f, 18f);
+        yield return new WaitForSeconds(0.15f);
+        yield return MoveWakePose(lying, side, lyingRotation, turnedOnSide, 0.09f, 0.26f, 18f, 47f, 0.32f);
+        yield return MoveWakePose(side, seated, turnedOnSide, feetOverEdge, 0.26f, seatedCrouch, 47f, -30f, 0.60f);
+        yield return new WaitForSeconds(0.12f);
+        yield return MoveWakePose(seated, planted, feetOverEdge, Quaternion.identity, seatedCrouch, seatedCrouch, -30f, 28f, 0.55f);
         footsteps.PlayOneShot(boot, 0.24f);
-        wakeStandProgress = 0f;
-        yield return MoveWakePose(planted, standing, feetDown, Quaternion.identity, 0.82f, 0f, 28f, 0f, 0.48f);
-        wakeStandProgress = float.NaN;
+        yield return RiseFromFootPlant(standing, seatedCrouch);
 
         figure.localPosition = rest;
         figure.localRotation = Quaternion.identity;
+        wakeRenderers = null;
         WakingUp = false;
         EndAction();
     }
@@ -114,8 +122,6 @@ public sealed class CellMotion : MonoBehaviour
         for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
             float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
-            if (!float.IsNaN(wakeStandProgress))
-                wakeStandProgress = t;
             PoseWakeUp(Vector3.Lerp(from, to, t), Quaternion.Slerp(start, finish, t),
                 Mathf.Lerp(startingCrouch, endingCrouch, t), Mathf.Lerp(startingArm, endingArm, t));
             yield return null;
@@ -124,22 +130,60 @@ public sealed class CellMotion : MonoBehaviour
         PoseWakeUp(to, finish, endingCrouch, endingArm);
     }
 
-    private void PoseWakeUp(Vector3 pelvis, Quaternion rotation, float crouch, float arm)
+    private IEnumerator RiseFromFootPlant(Vector3 standing, float seatedCrouch)
     {
-        var offset = new Vector3(-0.15f * crouch, -0.43f * crouch, 0f);
-        torso.localPosition = (frontLeg.Hip + backLeg.Hip) * 0.5f + offset;
-        float pitch = -33f * crouch;
-        if (library != null && !float.IsNaN(wakeStandProgress))
+        const float duration = 0.62f;
+        float low = library != null ? library.Sample(CellAnimationLibrary.Motion.SitStand, 0f).HipHeightDelta : 0f;
+        float high = library != null ? library.Sample(CellAnimationLibrary.Motion.SitStand, 1f).HipHeightDelta : 1f;
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
-            var stand = library.Sample(CellAnimationLibrary.Motion.SitStand, wakeStandProgress);
-            pitch = Mathf.Lerp(pitch, stand.TorsoPitch, Mathf.Sin(wakeStandProgress * Mathf.PI) * 0.7f);
+            float t = elapsed / duration;
+            float rise = Mathf.SmoothStep(0f, 1f, t);
+            float pitch = -33f * seatedCrouch * (1f - rise);
+            if (library != null)
+            {
+                var sample = library.Sample(CellAnimationLibrary.Motion.SitStand, t);
+                rise = Mathf.InverseLerp(low, high, sample.HipHeightDelta);
+                pitch = Mathf.Lerp(pitch, sample.TorsoPitch, Mathf.Sin(t * Mathf.PI));
+            }
+
+            float crouch = seatedCrouch * (1f - rise);
+            PoseWakeUp(standing + WakeHipOffset(crouch), Quaternion.identity, crouch, 28f * (1f - rise), pitch);
+            yield return null;
         }
 
-        torso.localRotation = Quaternion.Euler(0f, 0f, pitch);
+        PoseWakeUp(standing, Quaternion.identity, 0f, 0f);
+    }
+
+    private static Vector3 WakeHipOffset(float crouch) => new Vector3(-0.15f * crouch, -0.43f * crouch, 0f);
+
+    private void PoseWakeUp(Vector3 pelvis, Quaternion rotation, float crouch, float arm, float? torsoPitch = null)
+    {
+        Vector3 offset = WakeHipOffset(crouch);
+        torso.localPosition = (frontLeg.Hip + backLeg.Hip) * 0.5f + offset;
+        torso.localRotation = Quaternion.Euler(0f, 0f, torsoPitch ?? -33f * crouch);
         frontLeg.Pose(0f, 0f, offset, crouch);
         backLeg.Pose(Mathf.PI, 0f, offset, crouch);
         shoulder.localRotation = Quaternion.Euler(0f, 0f, arm);
         figure.SetPositionAndRotation(pelvis - rotation * torso.localPosition, rotation);
+
+        float lift = 0f;
+        foreach (Renderer part in wakeRenderers)
+        {
+            if (!part.enabled)
+                continue;
+
+            Bounds bounds = part.bounds;
+            lift = Mathf.Max(lift, 0.012f - bounds.min.y);
+            // Keep body parts above the top of the bed while they cross its footprint.
+            float edgeGap = Mathf.Max(0f, wakeBedBounds.min.x - bounds.max.x,
+                bounds.min.x - wakeBedBounds.max.x, wakeBedBounds.min.z - bounds.max.z,
+                bounds.min.z - wakeBedBounds.max.z);
+            float bedSupport = 1f - Mathf.SmoothStep(0f, 1f, edgeGap / 0.22f);
+            lift = Mathf.Max(lift, bedSupport * (wakeBedBounds.max.y + 0.012f - bounds.min.y));
+        }
+
+        figure.position += Vector3.up * lift;
     }
 
     private Transform Pivot(string label, Vector3 position, params Transform[] parts)
