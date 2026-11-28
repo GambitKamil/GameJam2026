@@ -66,3 +66,76 @@ Phase 2 starts at `fcfc217` on `gameplay/cell-composition-polish`. The Unity 600
 The Windows baseline built and the scripted route reached the exit and restarted. The first capture set is in `D:/GameJam2026/CellMotionEvidence/Phase2Before`. SHOT 1 has the bed and rod in frame, with bars at the far edge. SHOT 2 has little space beyond the bars. The side and top captures show the boot crossing the rod at 2.400 s, with 119.50 mm of oriented bounding overlap. The rod's wake translation was 0 m. Initial frame wall time averaged 11.591 ms (86.27 FPS) in Editor Play Mode, excluding direct readback frames. The comparable uncapped pass repeats the same route with corrected closed-gate sampling.
 
 Corrected uncapped baseline `Phase2Baseline` passed the full route. At 16:9 the closed and open gameplay plane bounds both read −3.7466 to 3.3107 m (0.00% revealed). Mean Editor frame wall time was 12.644 ms / 79.09 FPS across 1,172 frames after excluding synchronous capture work. The two-view boot proxy repeated at 119.50 mm and rod translation stayed at zero. The Windows baseline is in `Phase2Before`. The connected Unity MCP endpoint did not respond in this session, so capture and scene authoring use the local Unity Editor and existing C# harness. The project contains no dedicated camera, motion or rigging plugin in its package manifest.
+
+## Phase 2 implementation
+
+The branch includes the earlier gameplay and animation report commit `78a67b8`, the grate fix and the settled-key follow-up before the first Phase 2 commit `5840b38`. The five workstreams used separate camera, render-only depth, lighting, rod/foot and QA ownership. The isolated worktree let the team checkout keep its local work during editor imports. Camera and lighting controls use the existing Unity camera and Light components. Local lighting uses Built-in culling masks with scene-only layers 27–29 on render-only mesh nodes. The project layer registry and every existing collider are unchanged.
+
+| Workstream | Root cause and change | Files and evidence |
+| --- | --- | --- |
+| Framing and reveal | The old follow held the closed framing through the gate action. The wake camera frames the bunk through the grate at the current aspect. Successful opening of the existing gate starts a 0.85 s smoothstep from the existing completion hook. The extra width is 12.5% of the closed lane view. A compensating center shift pins the left edge while the player remains still. The reveal eases back as the player approaches the right camera limit. Normalized world width retains the service bay at narrower ratios. | `SideViewCamera.cs`, `CellEscape.cs`. Baseline 16:9 closed and open right X=3.3107 m. Final stationary-shot bounds are in the aspect table below. |
+| Corridor | The service backdrop was effectively a single plane. Recessed two existing masonry bays from Z=2.27 to Z=3.50 m. Brought the existing cart to X=3.91 m from X=5.14 m, framing it in front of the new return. The masonry return, pavers, ceiling extension and pipe supports reuse the Cell kit. | `Cell.unity`. In the capture, the existing pipes and cart occupy the near tier, with a recessed textured wall behind them. 41 additional mesh renderers and zero gameplay colliders. No placeholder objects or new Unity asset files. |
+| Readability | Much of the steel read at the same value as the wall and floor. Short-range fixtures use the existing light colors to fill the hero and separate steel, masonry and service props. A small key-local light follows the actual key as it falls and disappears on pickup. | `Cell.unity`. Materials, shaders, original light definitions and textural palette match Ali's original. The existing puzzle consumes the key before SHOT 2. The separate key frame records the light while the key is still in play. |
+| Rod, boot and stance | Side and top frames at 2.400 s and an oriented box overlap check confirmed real intersection. The wake pose places the boots on opposite clear sides and lifts the crossing boot above the shaft before it lowers to floor support. The same anchors carry through the stand handoff. Closed-gate stride targets account for the boot envelope. A far boot could slide at full length after rod pickup because only vertical hip correction was available. The pose now fits the pelvis horizontally within the reach of both planted feet first. | `CellMotion.Wake.cs`, `CellMotion.Locomotion.cs`, `CellEscape.cs`. 119.50 mm baseline oriented overlap, zero after. The pre-pickup rod stayed at position `(-5.250000, 0.110000, 0.560000)`, rotation `(0.000000, -0.414693, 0.000000, 0.909961)` and scale `(3.780000, 1.000000, 1.000000)`. Wake floor penetration 0.00 mm and near-floor boot delta 3.33 mm at 60 Hz. The far boot's re-tested 18.5 mm slip and 4.2 mm floor gap both measured 0.00 mm. |
+| Regression harness | The verifier now captures native aspect ratios, tests a visible throw with an in-frame cursor, and can hold a deterministic near-gate throw or walk during the reveal. It measures the two lane-plane edges, motion curvature and restart, rod pose, boot overlap, and near-floor motion. It still runs the extended key floor, grate, limb, aim, paw and tail checks end to end. | `CellPolishVerification.cs`, `CellPolishVerification.Composition.cs`, `CellPolishVerification.Metrics.cs` and the composition script `.meta`. No runtime dependency. |
+
+## Phase 2 screenshots
+
+| Reference frame | Before | After |
+| --- | --- | --- |
+| SHOT 1, waking on the bunk | [Before](docs/polish-evidence/phase2/before-shot-1.png) | [After](docs/polish-evidence/phase2/after-shot-1.png) |
+| SHOT 2, gate open and camera settled | [Before](docs/polish-evidence/phase2/before-shot-2.png) | [After](docs/polish-evidence/phase2/after-shot-2.png) |
+| Bed step at 2.400 s, side | [Before](docs/polish-evidence/phase2/before-step-side.png) | [After](docs/polish-evidence/phase2/after-step-side.png) |
+| Bed step at 2.400 s, top | [Before](docs/polish-evidence/phase2/before-step-top.png) | [After](docs/polish-evidence/phase2/after-step-top.png) |
+| Key after the drop | [Before](docs/polish-evidence/phase2/before-key.png) | [After](docs/polish-evidence/phase2/after-key.png) |
+
+The side projection can still place a boot and the rod in the same pixels. The top view and zero overlap between oriented boot and rod bounds establish physical clearance. The scene's original prop transform is unchanged throughout the wake and is still animated by its existing pickup.
+
+## Phase 2 readability and scene audit
+
+The two planes are visible in [SHOT 2](docs/polish-evidence/phase2/after-shot-2.png). The cart and pipes stay in front of the masonry return, and the far wall's median linear luminance is 0.0651 against 0.0972 on the near wall, a 33.0% drop. At 16:9 the bed frame contains the full hero, rod and grate, with the service bay tucked at its right edge. The existing path to the key supports both the short walk toward the grate and a valid on-screen throw from there. The [hanging key](docs/polish-evidence/phase2/after-key-hanging.png) and resting key are visible before the original pickup hides the prop and its light.
+
+The contrast probe box-downsamples each capture to 320 px wide in linear luminance. It compares the median Y of each 3×3 foreground patch with its neighboring background patch using `(lighter Y + 0.05) / (darker Y + 0.05)`, then reports the median of three pairs. Pairs use the same semantic edges where the composition moves the geometry. [Baseline sample coordinates and luminances](docs/polish-evidence/phase2/before-contrast.json) · [Final sample coordinates and luminances](docs/polish-evidence/phase2/after-contrast.json).
+
+| Edge | Baseline median | Final median |
+| --- | ---: | ---: |
+| SHOT 1 hero | 1.21:1 | 2.88:1 |
+| SHOT 1 bars | 1.39:1 | 2.34:1 |
+| SHOT 1 rod | 1.23:1 | 1.04:1 |
+| SHOT 2 hero | 3.00:1 | 1.96:1 |
+| SHOT 2 bars | 1.34:1 | 3.69:1 |
+| SHOT 2 near pipes | Outside the baseline sample | 1.47:1 |
+| SHOT 2 cart | Outside the baseline sample | 1.93:1 |
+| Resting key | 2.21:1 | 2.66:1 |
+| Hanging key | 2.23:1 | 3.30:1 |
+
+The approximate 3:1 target is met for the opening hero, open-frame bars and hanging key. Coverage is lower on the closed-frame bars, open-frame hero and service props. Lighting masonry behind the bars also raises some of the backdrop behind the hero in SHOT 2. The silhouette remains legible in the [opening grayscale frame](docs/polish-evidence/phase2/after-shot-1-gray.png) and [open grayscale frame](docs/polish-evidence/phase2/after-shot-2-gray.png). The rod shaft occupies roughly one thumbnail pixel, so the 3×3 window mostly samples floor. Its three native-resolution centerline/floor ratios are 7.12:1, 4.87:1 and 2.55:1. The style and play-scale edge distinction were retained with the original materials and without widening the rod. Hard black (all RGB channels ≤4) was 0% in both shots and the hanging-key frame. Hard white (all channels ≥250) covered 0.045%, 0.008% and 0.044% of those frames respectively.
+
+Scene verification found 725 enabled renderers, zero missing scripts and zero missing materials or shaders. The serialized audit compared all 22 physics components and every original Light component against `7a0e5c4`. All are identical. The original art tree, Packages and ProjectSettings are identical too. The added depth and lights live in `Cell.unity`. The rat behavior, legacy controls, key state/order and exit actions use their original scripts and entry points.
+
+## Phase 2 regression and performance
+
+All stationary release runs use the same scene and source tree, a 60 Hz simulated route, the same near-gate throw and reset. The world bounds are measured where the horizontal viewport rays cross the player's lane. The first stable shot at 16:9 holds the hero, bars and rod at viewport X=0.090, 0.943 and 0.247. The gate reveals 0.8822 m to the right while the player waits. In the stationary tests the peak right edge step was 25.9 mm/frame, its peak second difference 2.0 mm/frame squared and its first step 1.0 mm. The edge never reversed during the stationary reveal and the camera did not intersect the level. Restart restores both starting bounds to the sampled precision.
+
+| QA run | Native screenshot | Closed lane X (m) | Open lane X (m) | Right reveal | Mean frame time / FPS |
+| --- | --- | --- | --- | ---: | ---: |
+| Phase2Baseline | 960x540 | -3.7466 to 3.3107 | -3.7466 to 3.3107 | 0.00% | 12.644 ms / 79.09 |
+| Phase2Release169 | 960x540 | -3.7596 to 3.2977 | -3.7596 to 4.1799 | 12.50% | 12.725 ms / 78.58 |
+| Phase2Release1610 | 864x540 | -3.7596 to 3.2977 | -3.7596 to 4.1799 | 12.50% | 12.700 ms / 78.74 |
+| Phase2Release219 | 1260x540 | -3.7596 to 3.2977 | -3.7596 to 4.1799 | 12.50% | 12.485 ms / 80.09 |
+| Phase2Release43 | 720x540 | -3.7596 to 3.2977 | -3.7596 to 4.1799 | 12.50% | 12.412 ms / 80.57 |
+
+The mean wall-clock frame interval is from uncapped Editor Play Mode and excludes synchronous captures. The close-throw check walks farther than the baseline route. The 16:9 release is 0.64% slower in this sample, and every isolated stationary run is inside 5% of the baseline and above the project's 60 FPS budget. A 16:10 sample with a separate preview player still running was discarded and re-run with only the verifier.
+
+The release stationary runs are four consecutive clean full puzzle and motion passes on the same implementation, including the exact close-throw sequence that exposed the earlier far-boot slip. They restored `FindBread` after exit and restart. At 16:9 both boots had zero planted gap and slip, all 1,369 player grounded samples had support, and the arm and leg segments showed 0.000% drift. The wake hip step was 26.9 mm with a 0.5 mm stand handoff. Right and left aim settled at 0.02 and 0.00 degrees of steady-state error, and the existing mouse diagonal gait, jumps, planted paws and 133 ms tail lag all passed. The character's standing, crouched and interacting poses had zero measured overlap with the closed gate at the original capsule stop.
+
+`BUGS.md` has zero open P0/P1 entries. It records the 21:9 overhead-pipe crop and subtarget edge samples as limitations. At ultrawide the camera retains the full hero and floor, both risers, the cart and far wall. The consistent play-scale silhouette and original palette take precedence over forcing high contrast at every sampled point. The tracked snapshots and measurements are in `docs/polish-evidence/phase2/`.
+
+The moving 16:9 test also passed the full route and restart. Its closed lane width was 7.0573 m and its moving open width was 7.9395 m, the same 12.50% expansion. Both edges follow the player by an additional 2.8379 m. The combined motion changed the right edge by at most 68.1 mm per frame, with a 2.4 mm peak second difference, a 1.0 mm first step, zero reversal and zero geometry intersections. It averaged 12.586 ms / 79.45 FPS. [Full baseline and release route logs](docs/polish-evidence/phase2/regression.txt) · [21:9 SHOT 2](docs/polish-evidence/phase2/after-shot-2-219.png) · [4:3 SHOT 2](docs/polish-evidence/phase2/after-shot-2-43.png).
+
+The Windows x64 release built with zero errors and three Weathered Surface Meta pass warnings on D3D11, the same diagnostics recorded before Phase 2 when that shader variant compiled from cold cache. The final scripted runs captured zero gameplay warnings or errors. The standalone ran on Windows for nine seconds and initialized D3D11, PhysX and input with zero startup warnings or errors. Puzzle coverage comes from the scripted Editor runs. [Standalone startup log](docs/polish-evidence/phase2/windows-startup.txt).
+
+## Phase 2 suggestions (not implemented)
+
+- If every thumbnail sample needs 3:1, review the character, matte steel and corridor values with Ali using these paired captures. That art pass could target the open-frame hero and dark pipe edges without adding more local lights.
+- If the full pipe header needs to stay visible on ultrawide, review the vertical composition and the visible floor together at 21:9.
