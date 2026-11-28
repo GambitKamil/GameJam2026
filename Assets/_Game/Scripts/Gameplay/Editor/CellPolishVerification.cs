@@ -24,6 +24,9 @@ internal static partial class CellPolishVerification
     private static Transform figure, shoulder, hand, sleeve, nearBoot, farBoot, mouse, rod, gate, key, exit;
     private static Rigidbody body;
     private static Camera view;
+    private static Renderer[] keyRenderers;
+    private static float keyFloorHeight, keyDropClearance, keyFloorClearance;
+    private static Vector3 keyLowestPose;
     private static int phase, lastFrame, frames, errors, editorErrors;
     private static int previousCaptureFramerate;
     private static bool previousRunInBackground;
@@ -160,6 +163,12 @@ internal static partial class CellPolishVerification
             Record($"Rat bone {bone.name}: {rat.transform.InverseTransformPoint(bone.position):F3}");
         InitializeMetrics();
         InitializeGrateProbe();
+        keyRenderers = key.GetComponentsInChildren<Renderer>();
+        if (!Physics.Raycast(key.position, Vector3.down, out RaycastHit keyFloor, 5f, ~0, QueryTriggerInteraction.Ignore))
+            throw new InvalidOperationException("No floor found below the hanging key.");
+        keyFloorHeight = keyFloor.point.y;
+        Record($"Key support: {keyFloor.collider.name} at Y={keyFloorHeight:F4} m");
+        keyDropClearance = keyFloorClearance = float.PositiveInfinity;
         active = true;
     }
 
@@ -170,6 +179,8 @@ internal static partial class CellPolishVerification
         {
             SampleMotion();
             SampleGrateInteraction();
+            if (key.gameObject.activeInHierarchy)
+                SampleKeyClearance();
         }
         if (sleeve != null)
             armStretch = Mathf.Max(armStretch, Mathf.Abs(sleeve.localScale.y / armLength - 1f));
@@ -229,6 +240,9 @@ internal static partial class CellPolishVerification
                 Move(0f);
                 if (Stage() != "KeyBehindGate" || bread.ThrowInProgress)
                     return;
+                float keyTilt = Vector3.Angle(key.forward, Vector3.up);
+                keyTilt = Mathf.Min(keyTilt, 180f - keyTilt);
+                Metric(keyTilt <= 3f, $"Key resting tilt: {keyTilt:F2} degrees");
                 Capture("05-air-catch");
                 Next();
                 break;
@@ -282,6 +296,27 @@ internal static partial class CellPolishVerification
                 Finish("PASS: puzzle sequence and restart");
                 break;
         }
+    }
+
+    private static void SampleKeyClearance()
+    {
+        string stage = Stage();
+        if (stage != "MouseJumping" && stage != "KeyBehindGate" && stage != "KeyWithinReach")
+            return;
+
+        float bottom = float.PositiveInfinity;
+        foreach (Renderer part in keyRenderers)
+            bottom = Mathf.Min(bottom, part.bounds.min.y);
+
+        float clearance = bottom - keyFloorHeight;
+        if (stage == "MouseJumping")
+        {
+            if (clearance < keyDropClearance)
+                keyLowestPose = key.position;
+            keyDropClearance = Mathf.Min(keyDropClearance, clearance);
+        }
+        else
+            keyFloorClearance = Mathf.Min(keyFloorClearance, clearance);
     }
 
     private static void LaunchBread()
@@ -379,6 +414,8 @@ internal static partial class CellPolishVerification
         if (active)
         {
             ReportGrateProbe();
+            Metric(keyDropClearance >= -0.004f && keyFloorClearance >= -0.004f && keyFloorClearance <= 0.012f,
+                $"Key floor clearance: drop={keyDropClearance:F4} m, settled and dragged={keyFloorClearance:F4} m, lowest pivot={keyLowestPose:F3}");
             ReportMotionMetrics();
         }
         ResetRun();

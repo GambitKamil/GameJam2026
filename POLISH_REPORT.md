@@ -42,6 +42,14 @@ The extended route in `CellPolishVerification.Grate.cs` ran with the existing pu
 
 When the hook remains out of reach, the overlap guard can hold the torso farther from the grate. The largest grip-to-target residual on the extended 60 Hz route rose from 0.675 m to 0.826 m. The hand stays on its physical reach limit, and the hook tip, key retrieval and gate opening still complete.
 
+## Key landing follow-up
+
+After the mouse hit the key, the old drop fixed the pivot at Y=0.105 m and kept spinning the mesh in place. The bottom of the model crossed the floor by 50.0 mm during the drop and 49.4 mm after it stopped or was dragged. The floor probe identified the Cell Walking Surface at Y=0.
+
+`CellEscape.cs` now releases the existing key into `CellKeyFall.cs`. The Rigidbody falls and rebounds on compound colliders from the visible ring, shaft and teeth. First floor contact plays the existing clang and starts the guard sequence. The lower visible bounds resolve fast rotational contact against the floor. The key then tips onto its face and its drop colliders disengage, leaving the original scripted rod retrieval and pickup in control. Retrieval twists around world up so the key keeps its floor contact through the pull.
+
+`CellPolishVerification.cs` measured the drop, resting angle and clearance during the whole puzzle. At 60 and 30 Hz, peak penetration during the fall was 0.3 mm and 0.2 mm respectively. The resting angle was 0.00° at both rates and the settled and dragged floor clearance was 0.0000 m. The puzzle, gate, exit and restart passed at both rates. Logs are in `KeyBeforeProbe`, `KeyFlat60` and `KeyFlat30` under the evidence directory. The `KeyFlat60` Windows player built with zero reported errors and warnings and launched on D3D11/PhysX. The scene and art still match Ali's commit.
+
 ## Remaining limitations
 
 - During the far end of the existing hook drag, the requested point can sit beyond the physical reach of the fixed lane, shaft and roughly 0.442 m arm. The worst measured residual was 0.675 m at 60 Hz. The pose leans and clamps to available reach. The scripted hook tip and key still follow the original route. Authored door handles can also leave reach as they swing.

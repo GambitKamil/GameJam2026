@@ -17,6 +17,9 @@ public sealed class CellEscape : MonoBehaviour
     [SerializeField, Min(0.01f)] private float mouseTurnTime = 0.10f;
     [SerializeField, Min(0.01f)] private float mouseTailResponse = 0.085f;
 
+    [SerializeField, Range(0f, 0.5f)] private float keyBounce = 0.22f;
+    [SerializeField] private Vector3 keyReleaseSpin = new Vector3(2.8f, -0.9f, 3f);
+
     private enum Stage { FindBread, MouseJumping, KeyBehindGate, KeyWithinReach, GateOpen, ExitOpen, Complete }
 
     private Stage stage;
@@ -155,36 +158,32 @@ public sealed class CellEscape : MonoBehaviour
 
     private IEnumerator DropKey()
     {
-        Vector3 hang = key.position;
-        const float ground = 0.105f;
-        float height = hang.y;
-        float speed = 0f;
-        float spin = 170f;
-        bool firstImpact = true;
-        while (height > ground || speed > 0f)
+        key.SetParent(null, true);
+        var fallingKey = key.gameObject.AddComponent<CellKeyFall>();
+        Rigidbody keyBody = fallingKey.Begin(keyBounce, keyReleaseSpin);
+        var physicsTick = new WaitForFixedUpdate();
+        bool playedImpact = false;
+        float restingTime = 0f;
+        for (float time = 0f; time < 2.5f && restingTime < 0.16f; time += Time.fixedDeltaTime)
         {
-            float dt = Time.deltaTime;
-            speed += Physics.gravity.y * dt;
-            height += speed * dt;
-            if (height <= ground)
+            yield return physicsTick;
+            fallingKey.ResolveFloorContact();
+            if (!fallingKey.HitFloor)
+                continue;
+
+            if (!playedImpact)
             {
-                height = ground;
-                speed *= -0.34f;
-                spin *= 0.4f;
-                if (firstImpact)
-                {
-                    firstImpact = false;
-                    sound.PlayOneShot(clang, 0.55f);
-                    StartCoroutine(GuardApproaches());
-                }
-                if (speed < 0.50f)
-                    speed = 0f;
+                playedImpact = true;
+                sound.PlayOneShot(clang, 0.55f);
+                StartCoroutine(GuardApproaches());
             }
 
-            key.position = new Vector3(hang.x, height, hang.z);
-            key.Rotate(0f, 0f, spin * dt);
-            yield return null;
+            bool still = keyBody.IsSleeping()
+                || (keyBody.linearVelocity.sqrMagnitude < 0.0025f && keyBody.angularVelocity.sqrMagnitude < 0.16f);
+            restingTime = still ? restingTime + Time.fixedDeltaTime : 0f;
         }
+
+        yield return fallingKey.Finish();
     }
 
     private float RunDuration(Vector3 destination)
@@ -444,7 +443,7 @@ public sealed class CellEscape : MonoBehaviour
         {
             float t = Mathf.SmoothStep(0f, 1f, elapsed / dragDuration);
             key.position = Vector3.Lerp(keyOnFloor, retrieved, t);
-            key.rotation = keyRest * Quaternion.Euler(0f, 0f, Mathf.Sin(elapsed * 41f) * (1f - t) * 5f);
+            key.rotation = Quaternion.AngleAxis(Mathf.Sin(elapsed * 41f) * (1f - t) * 5f, Vector3.up) * keyRest;
             PlaceHook(key.position, direction);
             yield return null;
         }
