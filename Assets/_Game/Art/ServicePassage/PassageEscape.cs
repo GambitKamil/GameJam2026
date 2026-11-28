@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 // Night corridor: slip past the torch patrol, push the service cart onto the floor plate
 // to hold the gate open, and leave through the kitchen door.
@@ -101,7 +102,15 @@ public sealed class PassageEscape : MonoBehaviour
             if (vignette != null) vignette.Level = 0f;
             Release();
             Freeze(true);
-            if (GameManager.Instance != null) GameManager.Instance.CompleteCurrentLevel();
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.CompleteCurrentLevel();
+            }
+            else if (Application.CanStreamedLevelBeLoaded(GameManager.KitchenScene))
+            {
+                SceneManager.LoadSceneAsync(GameManager.KitchenScene);
+                enabled = false;
+            }
         }
     }
 
@@ -234,6 +243,7 @@ public sealed class PassageEscape : MonoBehaviour
     {
         if (lostTime > 0f) return note;
         if (escaped) return GameManager.Instance == null ? "Corridor cleared     /     R   Play again" : null;
+        if (holding && gate.CartOnPlate) return "E   Release cart to pass the gate";
         if (noteTime > 0f) return note;
         if (holding)
             return cart.X > cart.Home.x + 2.5f ? null : "Ctrl   Push quietly     E   Let go";

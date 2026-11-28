@@ -2654,6 +2654,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1989150868}
     m_Modifications:
+    - target: {fileID: 2145730281675010496, guid: 02e66957124b6448e957144eef09d9ab, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7795088484215773613, guid: 02e66957124b6448e957144eef09d9ab, type: 3}
       propertyPath: m_Name
       value: Pressure plate
