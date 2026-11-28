@@ -22,6 +22,8 @@
 
 ## Systems, audio & build
 
+- THRESHOLD — dohsk — https://dohsk.itch.io/threshold — free for personal and commercial use, attribution optional — `ATM_01` (Cell room tone), `STEP_01–04` (player and guard footsteps), `HIT_01` (key), `HIT_07` (lock), `HIT_04` (exit door), edited for Unity
+
 
 
 ## AI tools

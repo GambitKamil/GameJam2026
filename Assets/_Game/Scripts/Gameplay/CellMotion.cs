@@ -16,6 +16,7 @@ public sealed class CellMotion : MonoBehaviour
     [SerializeField] private Transform hair;
     [SerializeField] private Transform eye;
     [SerializeField] private Renderer bunkMattress;
+    [SerializeField] private AudioClip[] stoneFootsteps = System.Array.Empty<AudioClip>();
 
     private Rigidbody body;
     private SideViewPlayer player;
@@ -30,6 +31,7 @@ public sealed class CellMotion : MonoBehaviour
     private float lean;
     private AudioSource footsteps;
     private AudioClip boot;
+    private int nextFootstep;
     private Transform shoulder;
     private Transform torso;
     private LegPose frontLeg;
@@ -74,7 +76,6 @@ public sealed class CellMotion : MonoBehaviour
         Vector3 hips = (frontLeg.Hip + backLeg.Hip) * 0.5f;
         torso = Pivot("Torso at Hips", figure.TransformPoint(hips), figure.Find("Jacket"),
             figure.Find("Jacket Seam"), shoulder, neck);
-        boot = MakeFootstep();
     }
 
     private IEnumerator Start()
@@ -106,7 +107,7 @@ public sealed class CellMotion : MonoBehaviour
         yield return MoveWakePose(side, seated, turnedOnSide, feetOverEdge, 0.26f, seatedCrouch, 47f, -30f, 0.60f);
         yield return new WaitForSeconds(0.12f);
         yield return MoveWakePose(seated, planted, feetOverEdge, Quaternion.identity, seatedCrouch, seatedCrouch, -30f, 28f, 0.55f);
-        footsteps.PlayOneShot(boot, 0.24f);
+        PlayFootstep(0.24f);
         yield return RiseFromFootPlant(standing, seatedCrouch);
 
         figure.localPosition = rest;
@@ -326,7 +327,7 @@ public sealed class CellMotion : MonoBehaviour
             phase += speed * Time.deltaTime * (2f * Mathf.PI / 0.87f);
         bool walking = gait > 0.19f;
         if (walking && (!striding || Mathf.FloorToInt(previous / Mathf.PI) != Mathf.FloorToInt(phase / Mathf.PI)))
-            footsteps.PlayOneShot(boot, Mathf.Lerp(0.42f, 0.17f, crouchBlend));
+            PlayFootstep(Mathf.Lerp(0.42f, 0.17f, crouchBlend));
         striding = walking;
 
         figure.localScale = new Vector3(facing, 1f, 1f);
@@ -458,6 +459,25 @@ public sealed class CellMotion : MonoBehaviour
             segment.localRotation = Quaternion.FromToRotation(Vector3.up, upper - lower);
             segment.localScale = new Vector3(width.x * taper, Vector3.Distance(upper, lower) + 0.055f, width.z * taper);
         }
+    }
+
+    private void PlayFootstep(float volume)
+    {
+        AudioClip clip = null;
+        if (stoneFootsteps.Length != 0)
+        {
+            clip = stoneFootsteps[nextFootstep];
+            nextFootstep = (nextFootstep + 1) % stoneFootsteps.Length;
+        }
+
+        if (clip == null)
+        {
+            if (boot == null)
+                boot = MakeFootstep();
+            clip = boot;
+        }
+
+        footsteps.PlayOneShot(clip, volume);
     }
 
     private static AudioClip MakeFootstep()

@@ -12,6 +12,11 @@ public sealed class CellEscape : MonoBehaviour
     [SerializeField] private Transform gate;
     [SerializeField] private Transform exit;
     [SerializeField] private AudioSource sound;
+    [SerializeField] private AudioSource atmosphere;
+    [SerializeField] private AudioClip keyImpact;
+    [SerializeField] private AudioClip lockImpact;
+    [SerializeField] private AudioClip exitImpact;
+    [SerializeField] private AudioClip[] guardFootsteps = System.Array.Empty<AudioClip>();
 
     private enum Stage { FindBread, MouseJumping, KeyBehindGate, KeyWithinReach, GateOpen, ExitOpen, Complete }
 
@@ -24,6 +29,11 @@ public sealed class CellEscape : MonoBehaviour
     private AudioClip step;
     private AudioClip scrape;
     private AudioClip latch;
+    private AudioManager audioSettings;
+    private AudioSource playerAudio;
+    private float soundVolume;
+    private float playerVolume;
+    private float atmosphereVolume;
     private Transform gateLock;
     private SideViewCamera followCamera;
     private BreadSupply bread;
@@ -62,15 +72,41 @@ public sealed class CellEscape : MonoBehaviour
         mouseHeadRest = mouseHead.localRotation;
         mouseTailRest = mouseTail.localRotation;
         nextWander = Time.time + Random.Range(0.45f, 1.2f);
-        clang = MakeSound("Key clang", 0.38f, 840f, 1417f);
-        step = MakeSound("Guard boot", 0.18f, 62f, 109f);
-        latch = MakeSound("Gate latch", 0.12f, 510f, 985f);
+        clang = keyImpact != null ? keyImpact : MakeSound("Key clang", 0.38f, 840f, 1417f);
+        latch = lockImpact != null ? lockImpact : MakeSound("Gate latch", 0.12f, 510f, 985f);
         scrape = MakeScrape();
     }
 
     private void Start()
     {
         bread = FindFirstObjectByType<BreadSupply>();
+        if (atmosphere == null)
+            return;
+
+        audioSettings = AudioManager.Instance;
+        if (audioSettings != null)
+        {
+            playerAudio = player.GetComponent<AudioSource>();
+            soundVolume = sound.volume;
+            playerVolume = playerAudio.volume;
+            atmosphereVolume = atmosphere.volume;
+            audioSettings.SfxVolumeChanged += OnSfxVolumeChanged;
+            audioSettings.MutedChanged += OnMutedChanged;
+            ApplyVolumes();
+        }
+
+        atmosphere.Play();
+    }
+
+    private void OnSfxVolumeChanged(float _) => ApplyVolumes();
+    private void OnMutedChanged(bool _) => ApplyVolumes();
+
+    private void ApplyVolumes()
+    {
+        float gain = audioSettings.IsMuted ? 0f : audioSettings.SfxVolume;
+        sound.volume = soundVolume * gain;
+        playerAudio.volume = playerVolume * gain;
+        atmosphere.volume = atmosphereVolume * gain;
     }
 
     public bool HitsKey(Vector3 from, Vector3 to)
@@ -253,7 +289,15 @@ public sealed class CellEscape : MonoBehaviour
         StartCoroutine(Flee());
         for (int i = 0; i < 7; i++)
         {
-            sound.PlayOneShot(step, Mathf.Lerp(0.15f, 0.60f, i / 6f));
+            AudioClip sample = guardFootsteps.Length == 0 ? null : guardFootsteps[i % guardFootsteps.Length];
+            if (sample == null)
+            {
+                if (step == null)
+                    step = MakeSound("Guard boot", 0.18f, 62f, 109f);
+                sample = step;
+            }
+
+            sound.PlayOneShot(sample, Mathf.Lerp(0.15f, 0.60f, i / 6f));
             yield return new WaitForSeconds(0.39f);
         }
     }
@@ -569,6 +613,8 @@ public sealed class CellEscape : MonoBehaviour
         }
 
         motion.PlayLibraryGesture(CellAnimationLibrary.Motion.Push, duration);
+        if (door == exit && exitImpact != null)
+            sound.PlayOneShot(exitImpact, 0.35f);
         for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
             float t = elapsed / duration;
@@ -687,9 +733,17 @@ public sealed class CellEscape : MonoBehaviour
 
     private void OnDestroy()
     {
-        Destroy(clang);
+        if (audioSettings != null)
+        {
+            audioSettings.SfxVolumeChanged -= OnSfxVolumeChanged;
+            audioSettings.MutedChanged -= OnMutedChanged;
+        }
+
+        if (keyImpact == null)
+            Destroy(clang);
         Destroy(step);
         Destroy(scrape);
-        Destroy(latch);
+        if (lockImpact == null)
+            Destroy(latch);
     }
 }
