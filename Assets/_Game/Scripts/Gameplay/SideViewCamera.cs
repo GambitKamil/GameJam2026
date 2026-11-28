@@ -58,8 +58,7 @@ public sealed class SideViewCamera : MonoBehaviour
         {
             openingLeft = target.position.x - openingLeftMargin;
             openingRight = cellGate.position.x + openingCorridorFragment;
-            GetOpeningFrame(out followPosition.x, out followPosition.y, out followSize);
-            ApplyFrame();
+            ApplyOpeningFrame();
         }
         else if (usesSubjectFraming)
         {
@@ -86,8 +85,18 @@ public sealed class SideViewCamera : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (target == null || view == null)
+            return;
+
+        if (openingMotion != null && cellGate != null && openingMotion.WakingUp && view.orthographic)
+        {
+            // Compose from the current viewport immediately, even if its aspect changed after Awake.
+            ApplyOpeningFrame();
+            return;
+        }
+
         float delta = Time.deltaTime;
-        if (target == null || view == null || delta <= 0f)
+        if (delta <= 0f)
             return;
 
         if (lookAhead > 0f && targetBody != null && Mathf.Abs(targetBody.linearVelocity.x) > 0.15f)
@@ -101,9 +110,7 @@ public sealed class SideViewCamera : MonoBehaviour
 
         float targetY = authoredY;
         float targetSize = baseOrthographicSize;
-        if (openingMotion != null && cellGate != null && openingMotion.WakingUp && view.orthographic)
-            GetOpeningFrame(out targetX, out targetY, out targetSize);
-        else if (usesSubjectFraming)
+        if (usesSubjectFraming)
             targetX = FramingX(targetX, out targetSize);
 
         if (gateOpened && constrainHorizontalPosition && view.orthographic)
@@ -117,15 +124,17 @@ public sealed class SideViewCamera : MonoBehaviour
         ApplyFrame();
     }
 
-    private void GetOpeningFrame(out float x, out float y, out float size)
+    private void ApplyOpeningFrame()
     {
         Vector3 forward = transform.forward;
         float laneCenter = (openingLeft + openingRight) * 0.5f;
-        x = laneCenter + followPosition.z * forward.x / forward.z;
-        size = (openingRight - openingLeft) * 0.5f / LaneHalfWidth(1f, view.aspect);
+        followPosition.x = laneCenter + followPosition.z * forward.x / forward.z;
+        followSize = (openingRight - openingLeft) * 0.5f / LaneHalfWidth(1f, view.aspect);
         // On wide displays the height narrows. Keep the floor and rod in frame.
         float laneUp = transform.up.y - forward.y * transform.up.z / forward.z;
-        y = authoredY - Mathf.Max(0f, baseOrthographicSize - size) * laneUp;
+        followPosition.y = authoredY - Mathf.Max(0f, baseOrthographicSize - followSize) * laneUp;
+        horizontalVelocity = verticalVelocity = zoomVelocity = 0f;
+        ApplyFrame();
     }
 
     private void ApplyFrame()
