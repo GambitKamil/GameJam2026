@@ -34,7 +34,7 @@ public sealed partial class CellMotion : MonoBehaviour
     private LegPose backLeg;
     private Transform neck;
     private GameObject heldBread;
-    private bool holdingBite;
+    private GameObject biteInHand;
     private Vector3 rest;
     private float phase;
     private float gait;
@@ -136,18 +136,19 @@ public sealed partial class CellMotion : MonoBehaviour
         var bite = Instantiate(template);
         bite.name = "Bread Bite";
         bite.transform.localScale *= 0.62f;
+        bite.transform.position = HandPosition;
         bite.SetActive(true);
+        biteInHand = bite;
         for (float elapsed = 0; elapsed < 0.68f; elapsed += Time.deltaTime)
         {
             armAngle = 138f * Mathf.Clamp01(Mathf.Min(elapsed / 0.18f, (0.68f - elapsed) / 0.19f));
             chew = elapsed >= 0.21f ? Mathf.Sin(elapsed * 51f) * 8f : 0f;
-            holdingBite = elapsed < 0.25f;
-            bite.SetActive(holdingBite);
-            bite.transform.position = HandPosition;
+            bite.SetActive(elapsed < 0.25f);
             yield return null;
         }
 
         Destroy(bite);
+        biteInHand = null;
         EndAction();
     }
 
@@ -187,7 +188,6 @@ public sealed partial class CellMotion : MonoBehaviour
         }
         gestureDuration = 0f;
         armAngle = bend = chew = handTargetWeight = 0f;
-        holdingBite = false;
         Busy = false;
     }
 
@@ -267,7 +267,7 @@ public sealed partial class CellMotion : MonoBehaviour
             float? maxGripX = gateBlocker != null && gateBlocker.enabled && transform.position.x < gateBlocker.bounds.min.x
                 ? gateBlocker.bounds.min.x - 0.045f
                 : null;
-            bool holding = heldBread != null || carryingRod || holdingBite;
+            bool holding = heldBread != null || carryingRod || (biteInHand != null && biteInHand.activeSelf);
             float gestureWeight = Busy ? Mathf.Clamp01(Mathf.Abs(armAngle) / 45f) : 0f;
             float aimWeight = Mathf.SmoothStep(0f, 1f, aimBlend);
             presentedActionWeight = Mathf.Max(returnWeight * releasedActionWeight, Mathf.Max(aimWeight, gestureWeight));
@@ -281,6 +281,8 @@ public sealed partial class CellMotion : MonoBehaviour
             heldBread.transform.position = peasantVisual != null
                 ? HandPosition
                 : hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
+        if (biteInHand != null && biteInHand.activeSelf)
+            biteInHand.transform.position = HandPosition;
     }
 
     private static AudioClip MakeFootstep()
