@@ -16,6 +16,7 @@ public sealed class CellEscape : MonoBehaviour
     [SerializeField] private Vector2 mouseStepHeight = new Vector2(0.028f, 0.050f);
     [SerializeField, Min(0.01f)] private float mouseTurnTime = 0.10f;
     [SerializeField, Min(0.01f)] private float mouseTailResponse = 0.085f;
+    [SerializeField, Min(0.1f)] private float mouseChewSeconds = 1f;
 
     [SerializeField, Range(0f, 0.5f)] private float keyBounce = 0.22f;
     [SerializeField] private Vector3 keyReleaseSpin = new Vector3(2.8f, -0.9f, 3f);
@@ -131,9 +132,12 @@ public sealed class CellEscape : MonoBehaviour
             Vector3 stop = new Vector3(
                 Mathf.Max(nearGrate, food.x + Mathf.Sign(mouse.position.x - food.x) * 0.17f), 0f, food.z);
             yield return RunMouse(stop, RunDuration(stop));
-            for (float elapsed = 0f; elapsed < 0.22f; elapsed += Time.deltaTime)
+            float feedingTime = reachable ? mouseChewSeconds : 0.22f;
+            for (float elapsed = 0f; elapsed < feedingTime; elapsed += Time.deltaTime)
             {
-                mouseMotion.NibblePitch = Mathf.Sin(elapsed * 57f) * 15f;
+                float weight = Mathf.SmoothStep(0f, 1f, Mathf.Min(elapsed, feedingTime - elapsed) / 0.12f);
+                float nibble = reachable ? Mathf.Sin(elapsed * 5f * 2f * Mathf.PI) * 7f : 0f;
+                mouseMotion.NibblePitch = weight * (nibble - 5f);
                 yield return null;
             }
 

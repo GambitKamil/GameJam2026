@@ -34,6 +34,10 @@ internal static partial class CellPolishVerification
     private static Vector3 previousFigure;
     private static bool wasWaking;
     private static bool active;
+    private static GameObject feedingBread;
+    private static bool feedingStarted, feedingChecked;
+    private static float chewingBegan, launchAimBegan, launchAngle;
+    private static Vector3 launchDirection;
 
     static CellPolishVerification()
     {
@@ -136,6 +140,10 @@ internal static partial class CellPolishVerification
         previousRunInBackground = Application.runInBackground;
         Application.runInBackground = true;
         wasWaking = false;
+        feedingStarted = feedingChecked = false;
+        chewingBegan = float.NaN;
+        launchDirection = Vector3.zero;
+        launchAngle = 0f;
         Application.logMessageReceived += OnLog;
         player = Object.FindFirstObjectByType<SideViewPlayer>();
         bread = Object.FindFirstObjectByType<BreadSupply>();
@@ -218,7 +226,7 @@ internal static partial class CellPolishVerification
                     return;
                 if (!WalkTo(bread.transform.position.x))
                     return;
-                if (Time.time - phaseTime < 0.18f)
+                if (Time.time - phaseTime < 0.18f || !VerifyGroundFeeding())
                     return;
                 Call(bread, "TakePieceForThrow");
                 if (!bread.IsHoldingPiece)
@@ -233,9 +241,10 @@ internal static partial class CellPolishVerification
             case 2:
                 Move(0f);
                 ProbeFloor();
-                if (!PreparePlayerThrow())
+                if (launchDirection == Vector3.zero && !PreparePlayerThrow())
                     return;
-                LaunchBread();
+                if (!LaunchBread())
+                    return;
                 Next();
                 break;
             case 3:
@@ -327,27 +336,88 @@ internal static partial class CellPolishVerification
             keyFloorClearance = Mathf.Min(keyFloorClearance, clearance);
     }
 
-    private static void LaunchBread()
+    private static bool VerifyGroundFeeding()
     {
-        var path = new List<Vector3>();
-        for (int degrees = 0; degrees <= 180; degrees++)
+        if (!feedingStarted)
         {
-            float radians = (degrees - 90) * Mathf.Deg2Rad;
-            Vector3 velocity = new Vector3(Mathf.Cos(radians), Mathf.Sin(radians), 0f) * 8.5f;
-            Vector3 origin = motion.ThrowOrigin(velocity);
-            if ((int)Call(bread, "Simulate", origin, velocity, path) < 0)
-                continue;
-            Vector3 center = player.transform.position + Vector3.up * 0.48f;
-            Vector3 cursor = view.WorldToViewportPoint(center + velocity.normalized);
-            Record($"Bread: found interception with launch angle {degrees - 90} degrees, cursor viewport={cursor:F4}.");
-            if (verifyVisibleThrow)
-                Metric(cursor.z > 0f && cursor.x >= 0f && cursor.x <= 1f && cursor.y >= 0f && cursor.y <= 1f,
-                    "The successful bread direction is reachable by an on-screen cursor.");
-            Call(bread, "Launch", origin, velocity);
-            return;
+            feedingStarted = true;
+            feedingBread = Object.Instantiate(Field<GameObject>(bread, "crumbTemplate"));
+            feedingBread.name = "Ground Feeding Probe";
+            feedingBread.transform.position = new Vector3(gate.position.x + 1.1f, 0.075f, 0.64f);
+            feedingBread.SetActive(true);
+            escape.StartCoroutine(escape.ReactToBread(feedingBread.transform, false));
         }
 
-        throw new InvalidOperationException("No bread trajectory reaches the hanging key from the table.");
+        if (feedingBread != null)
+        {
+            float pitch = (float)mouseMotion.GetType().GetProperty("NibblePitch").GetValue(mouseMotion);
+            if (float.IsNaN(chewingBegan) && Mathf.Abs(pitch) > 0.001f)
+                chewingBegan = Time.time;
+            return false;
+        }
+
+        if (!feedingChecked)
+        {
+            feedingChecked = true;
+            float visibleChew = Time.time - chewingBegan;
+            Metric(Mathf.Abs(visibleChew - 1f) <= 2.1f / SampleRate,
+                $"Ground bread remained visible through {visibleChew:F3}s of chewing.");
+        }
+        return !Field<bool>(escape, "mouseReacting");
+    }
+
+    private static bool LaunchBread()
+    {
+        if (launchDirection == Vector3.zero)
+        {
+            PoseNextThrow();
+            return false;
+        }
+        if (Time.time - launchAimBegan < 0.24f)
+            return false;
+
+        Vector3 origin = motion.HandPosition;
+        float speed = Field<float>(bread, "throwSpeed");
+        var path = new List<Vector3>();
+        if ((int)Call(bread, "Simulate", origin, launchDirection * speed, path) < 0)
+        {
+            if (launchAngle >= 85f)
+                throw new InvalidOperationException("No aimed trajectory from the hand reached the key.");
+            PoseNextThrow();
+            return false;
+        }
+        Vector3 center = player.transform.position + Vector3.up * 0.48f;
+        Vector3 cursor = view.WorldToViewportPoint(center + launchDirection);
+        Record($"Bread: found interception from the aimed hand at {launchAngle:F0} degrees, cursor viewport={cursor:F4}.");
+        if (verifyVisibleThrow)
+            Metric(cursor.z > 0f && cursor.x >= 0f && cursor.x <= 1f && cursor.y >= 0f && cursor.y <= 1f,
+                "The successful bread direction is reachable by an on-screen cursor.");
+        DriveBreadAim(launchDirection, true);
+        var thrown = GameObject.Find("Thrown Bread");
+        float spawnGap = thrown == null ? float.PositiveInfinity : Vector3.Distance(thrown.transform.position, origin);
+        Metric(spawnGap <= 0.001f, $"Released bread to hand: {spawnGap:F4} m.");
+        return true;
+    }
+
+    private static void PoseNextThrow()
+    {
+        // Each candidate must use its own settled wrist position.
+        launchAngle += 5f;
+        float radians = launchAngle * Mathf.Deg2Rad;
+        launchDirection = new Vector3(Mathf.Cos(radians), Mathf.Sin(radians), 0f);
+        launchAimBegan = Time.time;
+        motion.SetAim(launchDirection, true);
+    }
+
+    private static void DriveBreadAim(Vector3 direction, bool release = false)
+    {
+        var type = bread.GetType();
+        var aimingField = type.GetField("aiming", Instance);
+        aimingField.SetValue(bread, true);
+        type.GetField("lastAimDirection", Instance).SetValue(bread, direction);
+        type.GetField("releaseAim", Instance).SetValue(bread, release);
+        Call(bread, "LateUpdate");
+        aimingField.SetValue(bread, false);
     }
 
     private static void Move(float input)
