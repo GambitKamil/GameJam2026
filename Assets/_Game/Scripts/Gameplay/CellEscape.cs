@@ -567,7 +567,7 @@ public sealed class CellEscape : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!SideViewPlayer.CanReadInput)
+        if (!SideViewPlayer.CanReadInput || motion.WakingUp)
             return;
 
         string prompt = null;

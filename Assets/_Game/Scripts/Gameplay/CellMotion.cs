@@ -15,6 +15,7 @@ public sealed class CellMotion : MonoBehaviour
     [SerializeField] private Transform nose;
     [SerializeField] private Transform hair;
     [SerializeField] private Transform eye;
+    [SerializeField] private Renderer bunkMattress;
 
     private Rigidbody body;
     private SideViewPlayer player;
@@ -47,6 +48,7 @@ public sealed class CellMotion : MonoBehaviour
     public int Facing => facing;
     public bool OccupiesHand => heldBread != null || Busy;
     public bool Busy { get; private set; }
+    public bool WakingUp { get; private set; }
 
     private void Awake()
     {
@@ -66,6 +68,61 @@ public sealed class CellMotion : MonoBehaviour
         torso = Pivot("Torso at Hips", figure.TransformPoint(hips), figure.Find("Jacket"),
             figure.Find("Jacket Seam"), shoulder, neck);
         boot = MakeFootstep();
+    }
+
+    private IEnumerator Start()
+    {
+        if (bunkMattress == null)
+            yield break;
+
+        Busy = WakingUp = true;
+        Bounds mattress = bunkMattress.bounds;
+        Vector3 hips = (frontLeg.Hip + backLeg.Hip) * 0.5f;
+        Vector3 standing = figure.TransformPoint(hips);
+        Vector3 lying = new Vector3(mattress.center.x, mattress.max.y + 0.16f, mattress.center.z);
+        Vector3 sitting = new Vector3(standing.x, mattress.max.y + 0.10f, mattress.min.z - 0.06f);
+        Vector3 planted = standing - Vector3.up * (0.43f * 0.82f);
+        Quaternion onSide = Quaternion.Euler(0f, 0f, 90f);
+        Quaternion atEdge = Quaternion.Euler(0f, 90f, 0f);
+        Quaternion feetDown = Quaternion.Euler(0f, 22f, 0f);
+
+        PoseWakeUp(lying, onSide, 0.12f, 12f);
+        yield return new WaitForSeconds(0.14f);
+        yield return MoveWakePose(lying, sitting, onSide, atEdge, 0.12f, 0.88f, 12f, -40f, 0.55f);
+        yield return new WaitForSeconds(0.16f);
+        yield return MoveWakePose(sitting, planted, atEdge, feetDown, 0.88f, 0.82f, -40f, 28f, 0.45f);
+        footsteps.PlayOneShot(boot, 0.24f);
+        yield return MoveWakePose(planted, standing, feetDown, Quaternion.identity, 0.82f, 0f, 28f, 0f, 0.34f);
+
+        figure.localPosition = rest;
+        figure.localRotation = Quaternion.identity;
+        WakingUp = false;
+        EndAction();
+    }
+
+    private IEnumerator MoveWakePose(Vector3 from, Vector3 to, Quaternion start, Quaternion finish,
+        float startingCrouch, float endingCrouch, float startingArm, float endingArm, float duration)
+    {
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            PoseWakeUp(Vector3.Lerp(from, to, t), Quaternion.Slerp(start, finish, t),
+                Mathf.Lerp(startingCrouch, endingCrouch, t), Mathf.Lerp(startingArm, endingArm, t));
+            yield return null;
+        }
+
+        PoseWakeUp(to, finish, endingCrouch, endingArm);
+    }
+
+    private void PoseWakeUp(Vector3 pelvis, Quaternion rotation, float crouch, float arm)
+    {
+        var offset = new Vector3(-0.15f * crouch, -0.43f * crouch, 0f);
+        torso.localPosition = (frontLeg.Hip + backLeg.Hip) * 0.5f + offset;
+        torso.localRotation = Quaternion.Euler(0f, 0f, -33f * crouch);
+        frontLeg.Pose(0f, 0f, offset, crouch);
+        backLeg.Pose(Mathf.PI, 0f, offset, crouch);
+        shoulder.localRotation = Quaternion.Euler(0f, 0f, arm);
+        figure.SetPositionAndRotation(pelvis - rotation * torso.localPosition, rotation);
     }
 
     private Transform Pivot(string label, Vector3 position, params Transform[] parts)
@@ -184,6 +241,9 @@ public sealed class CellMotion : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (WakingUp)
+            return;
+
         float x = body.linearVelocity.x;
         float speed = Mathf.Abs(x);
         if (speed > 0.2f && !Busy)

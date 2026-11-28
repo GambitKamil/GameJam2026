@@ -45286,6 +45286,7 @@ MonoBehaviour:
   nose: {fileID: 1068603308}
   hair: {fileID: 316110677}
   eye: {fileID: 1026406270}
+  bunkMattress: {fileID: 1975028645}
 --- !u!82 &1451659040
 AudioSource:
   m_ObjectHideFlags: 0
