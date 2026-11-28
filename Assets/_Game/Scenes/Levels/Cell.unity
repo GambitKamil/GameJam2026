@@ -45176,6 +45176,7 @@ GameObject:
   - component: {fileID: 1451659035}
   - component: {fileID: 1451659040}
   - component: {fileID: 1451659039}
+  - component: {fileID: 1451659041}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -45384,6 +45385,30 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1451659041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1451659034}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a8db2bb704bff2438aa058eb9d6924e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CellAnimationLibrary
+  sourceModel: {fileID: 919132149155446097, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  clips:
+  - {fileID: 7994627924475153551, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: -7003542030617561338, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: -7993625790543202706, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: 4366774653929184976, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: 3659977189094709723, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: 2857599376137209812, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: -2328835098782832033, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: 2931362099718132477, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: 1705686167135224321, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
+  - {fileID: 497093190674883199, guid: ad02f44775cf50549ac663dd9d986b58, type: 3}
 --- !u!1 &1452342193
 GameObject:
   m_ObjectHideFlags: 0

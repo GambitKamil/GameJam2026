@@ -45,6 +45,7 @@ public sealed class CellEscape : MonoBehaviour
     private float wanderDuration;
     private float nextWander;
     private bool rodInUse;
+    private bool liftingRod;
 
     private void Awake()
     {
@@ -328,7 +329,9 @@ public sealed class CellEscape : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (haveRod && !rodInUse)
+        if (liftingRod)
+            rod.position = motion.HandPosition - rod.TransformVector(new Vector3(-0.27f, 0f, 0f));
+        else if (haveRod && !rodInUse)
             CarryRod();
     }
 
@@ -348,7 +351,7 @@ public sealed class CellEscape : MonoBehaviour
         if (moving || motion.Busy)
             return;
 
-        if (!haveRod && stage <= Stage.KeyBehindGate && Near(rod, 0.75f))
+        if (!haveRod && stage == Stage.KeyBehindGate && Near(rod, 0.75f))
         {
             StartCoroutine(PickUpRod());
             return;
@@ -366,18 +369,33 @@ public sealed class CellEscape : MonoBehaviour
     {
         moving = true;
         rodInUse = true;
-        motion.Face(rod.position.x - player.transform.position.x);
-        yield return motion.Reach(18f, 36f, 0.30f);
-        yield return Move(rod, motion.HandPosition, 0.30f, 0.09f);
-        Quaternion floorRotation = rod.rotation;
-        StartCoroutine(motion.Reach(65f, 0f, 0.25f));
-        for (float elapsed = 0f; elapsed < 0.28f; elapsed += Time.deltaTime)
+        Vector3 grip = rod.TransformPoint(new Vector3(-0.27f, 0f, 0f));
+        motion.Face(grip.x - player.transform.position.x);
+        motion.PlayLibraryGesture(CellAnimationLibrary.Motion.FloorPickup, 1.08f);
+        yield return motion.Reach(18f, 36f, 0.31f);
+        for (float elapsed = 0f; elapsed < 0.21f; elapsed += Time.deltaTime)
         {
-            rod.position = motion.HandPosition;
-            rod.rotation = Quaternion.Slerp(floorRotation, Quaternion.Euler(0f, 0f, 52f), elapsed / 0.28f);
+            motion.SetHandTarget(grip, Mathf.SmoothStep(0f, 1f, elapsed / 0.21f));
             yield return null;
         }
+
+        motion.SetHandTarget(grip, 1f);
+        yield return null;
+        liftingRod = true;
+        Quaternion floorRotation = rod.rotation;
+        float facing = motion.Facing;
+        Quaternion upright = Quaternion.Euler(0f, 0f, facing > 0f ? 82f : 98f);
+        StartCoroutine(motion.Reach(42f, 0f, 0.54f));
+        for (float elapsed = 0f; elapsed < 0.54f; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / 0.54f);
+            motion.SetHandTarget(grip, 1f - t);
+            rod.rotation = Quaternion.Slerp(floorRotation, upright, t);
+            yield return null;
+        }
+
         haveRod = true;
+        liftingRod = false;
         rodInUse = false;
         motion.SetCarryingRod(true);
         motion.EndAction();
@@ -388,9 +406,11 @@ public sealed class CellEscape : MonoBehaviour
     {
         moving = true;
         motion.Face(key.position.x - player.transform.position.x);
+        motion.PlayLibraryGesture(CellAnimationLibrary.Motion.FloorPickup, 0.55f);
         yield return motion.Reach(-25f, 34f, 0.25f);
         yield return Move(key, motion.HandPosition, 0.26f, 0.10f);
         key.gameObject.SetActive(false);
+        motion.PlayLibraryGesture(CellAnimationLibrary.Motion.Interact, 0.64f);
         yield return motion.Reach(54f, 0f, 0.22f);
         for (float elapsed = 0f; elapsed < 0.22f; elapsed += Time.deltaTime)
         {
@@ -410,6 +430,7 @@ public sealed class CellEscape : MonoBehaviour
         moving = true;
         rodInUse = true;
         motion.Face(1f);
+        motion.PlayLibraryGesture(CellAnimationLibrary.Motion.Push, 1.6f);
         yield return motion.Reach(35f, 25f, 0.23f);
         Vector3 grip = motion.HandPosition;
         Vector3 keyOnFloor = key.position;
@@ -517,17 +538,30 @@ public sealed class CellEscape : MonoBehaviour
         Quaternion closed = door.rotation;
         Quaternion open = Quaternion.AngleAxis(angle, Vector3.up) * closed;
         const float duration = 0.56f;
+        Transform handle = door == gate ? gateLock : door.Find("Handle");
+        if (door == exit && handle != null)
+        {
+            motion.Face(exit.position.x - player.transform.position.x);
+            motion.PlayLibraryGesture(CellAnimationLibrary.Motion.Interact, 0.32f);
+            yield return motion.Reach(58f, 0f, 0.22f);
+            motion.SetHandTarget(handle.position, 1f);
+            yield return new WaitForSeconds(0.10f);
+        }
+
+        motion.PlayLibraryGesture(CellAnimationLibrary.Motion.Push, duration);
         for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
             float t = elapsed / duration;
             door.rotation = Quaternion.Slerp(closed, open, Mathf.SmoothStep(0f, 1f, t));
-            if (door == gate)
-                motion.SetHandTarget(GateContact(), 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.24f, 0.63f, t)));
+            if (handle != null)
+                motion.SetHandTarget(door == gate ? GateContact() : handle.position,
+                    1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.24f, 0.63f, t)));
             yield return null;
         }
 
-        if (door == gate)
-            motion.SetHandTarget(Vector3.zero, 0f);
+        motion.SetHandTarget(Vector3.zero, 0f);
+        if (door == exit)
+            motion.EndAction();
         door.rotation = open;
         blocker.enabled = false;
         stage = next;
@@ -579,7 +613,7 @@ public sealed class CellEscape : MonoBehaviour
             prompt = "E - Pick up key and unlock gate";
         else if (!moving && stage == Stage.KeyBehindGate && Near(gate, 1f))
             prompt = haveRod ? "E - Hook the key" : "The rod is under the bunk.";
-        else if (!haveRod && stage <= Stage.KeyBehindGate && Near(rod, 0.75f))
+        else if (!haveRod && stage == Stage.KeyBehindGate && Near(rod, 0.75f))
             prompt = "E - Take the rod    Hold Ctrl - Crouch";
         else if (bread != null && bread.IsHoldingPiece)
             prompt = "Hold left mouse to aim. Release to throw.";
