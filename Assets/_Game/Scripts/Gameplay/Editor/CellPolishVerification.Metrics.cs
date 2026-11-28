@@ -29,6 +29,7 @@ internal static partial class CellPolishVerification
     private static float armSegment, armDrift, wakeHipStep, wakeSeam, wakeFloorDepth, cameraStep, gripGap;
     private static float aimIssued, aimSettled, lastAimAngle, aimStep;
     private static Vector3 lastHip, lastCamera, lastArmDirection;
+    private static string cameraPeak;
     private static int aimPhase, wakeMilestone, supportedFrames, unsupportedFrames, playerPawlessFrames;
     private static int firstDiagonalFrames, secondDiagonalFrames, airborneFrames, metricFailures, armSamples;
     private static string gripPeak;
@@ -39,7 +40,7 @@ internal static partial class CellPolishVerification
         armDrift = wakeHipStep = wakeSeam = wakeFloorDepth = cameraStep = gripGap = aimStep = 0f;
         aimPhase = wakeMilestone = supportedFrames = unsupportedFrames = playerPawlessFrames = 0;
         firstDiagonalFrames = secondDiagonalFrames = airborneFrames = metricFailures = armSamples = 0;
-        gripPeak = "none";
+        cameraPeak = gripPeak = "none";
         wakingLastFrame = aiming = hasFrame = false;
         torso = Field<Transform>(motion, "torso");
         elbow = OptionalField<Transform>(motion, "forearm");
@@ -69,9 +70,15 @@ internal static partial class CellPolishVerification
 
     private static void SampleMotion()
     {
-        if (hasFrame)
-            cameraStep = Mathf.Max(cameraStep, Vector3.Distance(view.transform.position, lastCamera));
-        lastCamera = view.transform.position;
+        Vector3 cameraPosition = view.transform.position;
+        float cameraDelta = Vector3.Distance(cameraPosition, lastCamera);
+        // The verifier overrides Camera.aspect after Awake. Measure motion after that update.
+        if (hasFrame && Time.time - began > 1.5f / SampleRate && cameraDelta > cameraStep)
+        {
+            cameraStep = cameraDelta;
+            cameraPeak = $"from {lastCamera:F4} to {cameraPosition:F4} in phase {phase}, {Stage()} at {Time.time - began:F3}s";
+        }
+        lastCamera = cameraPosition;
         hasFrame = true;
 
         if (motion.WakingUp)
@@ -309,7 +316,7 @@ internal static partial class CellPolishVerification
             $"Player segment length drift: arm={armDrift:P3}, legs={legDrift:P3}, arm samples={armSamples}, leg samples={nearLegProbe.Samples}/{farLegProbe.Samples}");
         Metric(wakeSeam <= 0.05f && wakeHipStep <= 0.08f * DefaultSampleRate / SampleRate && wakeFloorDepth <= SupportTolerance,
             $"Wake: hip step={wakeHipStep:F4} m, stand seam={wakeSeam:F4} m, boot penetration={wakeFloorDepth:F4} m");
-        Record($"General motion: max camera step={cameraStep:F4} m, max grip-to-target gap at >=95% reach weight={gripGap:F4} m ({gripPeak})");
+        Record($"General motion: max camera step={cameraStep:F4} m ({cameraPeak}), max grip-to-target gap at >=95% reach weight={gripGap:F4} m ({gripPeak})");
         Metric(grounded != null && supportedFrames > 0 && playerPawlessFrames == 0,
             $"Player support: {supportedFrames} grounded, {unsupportedFrames} airborne, {playerPawlessFrames} grounded without a boot inside 20 mm of support");
         ReportContact("Player near boot", feet[0], false);
@@ -329,7 +336,7 @@ internal static partial class CellPolishVerification
             probe.Gap <= (isMouse ? MouseSupportTolerance : SupportTolerance) &&
             probe.Slip <= (isMouse ? MouseSlipTolerance : SlipTolerance);
         Metric(valid, $"{name}: planted={probe.SupportFrames}, swing={probe.SwingFrames}, max sole gap={probe.Gap:F4} m, max consecutive planted slip={probe.Slip:F4} m");
-        if (isMouse && probe.SupportFrames > 0)
+        if ((!valid || isMouse) && probe.SupportFrames > 0)
             Record($"    {name} peaks: gap {probe.GapPeak}, slip {probe.SlipPeak}, skipped frame pairs={probe.SkippedPairs}, distinct adjacent contacts={probe.ReplantPairs}, largest adjacent replant delta={probe.ReplantStep:F4} m");
     }
 
@@ -388,7 +395,7 @@ internal static partial class CellPolishVerification
                 if (Mathf.Abs(gap) > Gap)
                 {
                     Gap = Mathf.Abs(gap);
-                    GapPeak = $"{gap:F4} m at {Time.time - began:F3}s, sole={current:F3}";
+                    GapPeak = $"{gap:F4} m at {Time.time - began:F3}s, sole={current:F3} in phase {phase}, {Stage()}";
                 }
                 if (previousPlanted && previousSupport == support)
                 {
@@ -403,7 +410,7 @@ internal static partial class CellPolishVerification
                         else if (slip > Slip)
                         {
                             Slip = slip;
-                            SlipPeak = $"at {Time.time - began:F3}s, {previousPosition:F3} to {current:F3}";
+                            SlipPeak = $"at {Time.time - began:F3}s, {previousPosition:F3} to {current:F3} in phase {phase}, {Stage()}";
                         }
                     }
                     else

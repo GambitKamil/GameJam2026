@@ -24,7 +24,7 @@ internal static partial class CellPolishVerification
     private static readonly Vector3[] previousBootPosition = new Vector3[2];
     private static readonly bool[] previousBootSupport = new bool[2];
     private static float wakeFootSlip, wakeFootDepth, comparisonStepTime, approachSettledAt;
-    private static bool aimSampleDone, verifyVisibleThrow, restoreCompositionTiming;
+    private static bool aimSampleDone, verifyVisibleThrow, forceCloseThrow, approachForThrow, restoreCompositionTiming;
 
 
     private static void InitializeComposition()
@@ -38,7 +38,8 @@ internal static partial class CellPolishVerification
         revealPeakStep = revealPeakJerk = revealBacktrack = revealFirstFrameStep = 0f;
         previousRight = previousRightStep = shotLeft = shotRight = float.NaN;
         resetTime = approachSettledAt = float.NaN;
-        aimSampleDone = false;
+        aimSampleDone = approachForThrow = false;
+        forceCloseThrow = File.Exists(Path.Combine(output, "close-throw.txt"));
         verifyVisibleThrow = File.Exists(Path.Combine(output, "check-key-visibility.txt"));
         resetCaptureReady = camClipsWorld = false;
         moveDuringReveal = File.Exists(Path.Combine(output, "reveal-moving.txt"));
@@ -195,15 +196,18 @@ internal static partial class CellPolishVerification
                 return false;
             aimSampleDone = true;
             LogKeyVisibility("bread table");
+            approachForThrow = verifyVisibleThrow && (forceCloseThrow || !KeyOnScreen());
         }
 
         // Verify a visible shot from an ordinary traversable spot when the table framing cuts off the key.
-        if (verifyVisibleThrow && !KeyOnScreen())
+        if (approachForThrow)
         {
-            if (!WalkTo(gate.position.x - 0.72f))
-                return false;
             if (float.IsNaN(approachSettledAt))
+            {
+                if (!WalkTo(gate.position.x - 0.72f))
+                    return false;
                 approachSettledAt = Time.time;
+            }
             if (Time.time - approachSettledAt < 0.45f)
                 return false;
         }
