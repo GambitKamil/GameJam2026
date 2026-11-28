@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody), typeof(AudioSource))]
-public sealed class CellMotion : MonoBehaviour
+public sealed partial class CellMotion : MonoBehaviour
 {
     [SerializeField] private Transform figure;
     [SerializeField] private Transform sleeve;
@@ -45,10 +45,6 @@ public sealed class CellMotion : MonoBehaviour
     private int facing = 1;
     private bool striding;
     private bool carryingRod;
-    private Vector3 sleeveRestPosition;
-    private Quaternion sleeveRestRotation;
-    private Vector3 sleeveRestScale;
-    private Vector3 handRestPosition;
     private Vector3 handTarget;
     private float handTargetWeight;
     public int Facing => facing;
@@ -64,10 +60,7 @@ public sealed class CellMotion : MonoBehaviour
         footsteps = GetComponent<AudioSource>();
         rest = figure.localPosition;
         shoulder = Pivot("Throw Shoulder", sleeve.position + Vector3.up * 0.11f, sleeve, hand);
-        sleeveRestPosition = sleeve.localPosition;
-        sleeveRestRotation = sleeve.localRotation;
-        sleeveRestScale = sleeve.localScale;
-        handRestPosition = hand.localPosition;
+        InitializeArmPose();
         neck = Pivot("Neck", head.position - Vector3.up * 0.14f, head, nose, hair, eye);
         frontLeg = new LegPose(nearLeg, nearBoot);
         backLeg = new LegPose(farLeg, farBoot);
@@ -387,79 +380,6 @@ public sealed class CellMotion : MonoBehaviour
             heldBread.transform.position = hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
     }
 
-    private void AlignHand()
-    {
-        sleeve.localPosition = sleeveRestPosition;
-        sleeve.localRotation = sleeveRestRotation;
-        sleeve.localScale = sleeveRestScale;
-        hand.localPosition = handRestPosition;
-        if (handTargetWeight <= 0f)
-            return;
-
-        Vector3 root = shoulder.position;
-        Vector3 wrist = Vector3.Lerp(hand.position, handTarget, handTargetWeight);
-        Vector3 arm = root - wrist;
-        sleeve.position = (root + wrist) * 0.5f;
-        sleeve.rotation = Quaternion.FromToRotation(Vector3.up, arm);
-        sleeve.localScale = new Vector3(sleeveRestScale.x, arm.magnitude, sleeveRestScale.z);
-        hand.position = wrist;
-    }
-
-    private sealed class LegPose
-    {
-        private readonly Transform thigh;
-        private readonly Transform shin;
-        private readonly Transform boot;
-        private readonly Vector3 bootHome;
-        private readonly Vector3 ankleOffset = new Vector3(0f, 0.075f, 0f);
-        private readonly Vector3 width;
-        private readonly float length;
-
-        public Vector3 Hip { get; }
-
-        public LegPose(Transform leg, Transform shoe)
-        {
-            thigh = leg;
-            boot = shoe;
-            bootHome = boot.localPosition;
-            Hip = leg.localPosition + Vector3.up * 0.32f;
-            width = leg.localScale;
-            length = Vector3.Distance(Hip, bootHome + ankleOffset) * 0.52f;
-            shin = Instantiate(leg, leg.parent, false);
-            shin.name = leg.name + " Shin";
-        }
-
-        public void Pose(float phase, float gait, Vector3 hipOffset, float crouch,
-            Vector3 sampledStride = default, float strideBlend = 0f)
-        {
-            float cycle = Mathf.Repeat(phase / (2f * Mathf.PI), 1f);
-            float swing = Mathf.InverseLerp(0.56f, 1f, cycle);
-            float travel = cycle <= 0.56f
-                ? Mathf.Lerp(0.24f, -0.24f, cycle / 0.56f)
-                : Mathf.SmoothStep(-0.24f, 0.24f, swing);
-            float step = Mathf.Sin(swing * Mathf.PI) * 0.14f;
-            Vector3 stride = new Vector3(travel, step, 0f) * gait * (1f - crouch * 0.75f);
-            stride = Vector3.Lerp(stride, sampledStride, strideBlend);
-            Vector3 ankle = bootHome + stride + ankleOffset;
-            Vector3 hip = Hip + hipOffset;
-            Vector3 axis = ankle - hip;
-            Vector3 ahead = new Vector3(-axis.y, axis.x, 0f).normalized;
-            float kneeTravel = Mathf.Sqrt(Mathf.Max(0f, length * length - axis.sqrMagnitude * 0.25f));
-            Vector3 knee = (hip + ankle) * 0.5f + ahead * kneeTravel;
-
-            PlaceSegment(thigh, hip, knee, 1f);
-            PlaceSegment(shin, knee, ankle, 0.87f);
-            boot.localPosition = bootHome + stride;
-        }
-
-        private void PlaceSegment(Transform segment, Vector3 upper, Vector3 lower, float taper)
-        {
-            segment.localPosition = (upper + lower) * 0.5f;
-            segment.localRotation = Quaternion.FromToRotation(Vector3.up, upper - lower);
-            segment.localScale = new Vector3(width.x * taper, Vector3.Distance(upper, lower) + 0.055f, width.z * taper);
-        }
-    }
-
     private static AudioClip MakeFootstep()
     {
         const int sampleRate = 22050;
@@ -481,6 +401,7 @@ public sealed class CellMotion : MonoBehaviour
     private void OnDestroy()
     {
         Destroy(boot);
+        DestroyArmPose();
         Release();
     }
 }
