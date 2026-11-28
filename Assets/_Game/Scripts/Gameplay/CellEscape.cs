@@ -22,6 +22,10 @@ public sealed class CellEscape : MonoBehaviour
     private Vector3 mouseHome;
     private AudioClip clang;
     private AudioClip step;
+    private AudioClip scrape;
+    private AudioClip latch;
+    private Transform gateLock;
+    private SideViewCamera followCamera;
     private BreadSupply bread;
     private CellMotion motion;
     private Transform mouseHead;
@@ -45,6 +49,8 @@ public sealed class CellEscape : MonoBehaviour
     private void Awake()
     {
         levelCamera = Camera.main;
+        followCamera = levelCamera.GetComponent<SideViewCamera>();
+        gateLock = gate.Find("Lock Plate");
         mouseHome = mouse.position;
         motion = player.GetComponent<CellMotion>();
         mouseHead = mouse.Find("Mouse Head");
@@ -54,6 +60,8 @@ public sealed class CellEscape : MonoBehaviour
         nextWander = Time.time + Random.Range(0.45f, 1.2f);
         clang = MakeSound("Key clang", 0.38f, 840f, 1417f);
         step = MakeSound("Guard boot", 0.18f, 62f, 109f);
+        latch = MakeSound("Gate latch", 0.12f, 510f, 985f);
+        scrape = MakeScrape();
     }
 
     private void Start()
@@ -111,7 +119,10 @@ public sealed class CellEscape : MonoBehaviour
             mouseReacting = true;
             wanderDuration = 0f;
             Vector3 food = crumb.position;
-            Vector3 stop = new Vector3(food.x + Mathf.Sign(mouse.position.x - food.x) * 0.17f, 0f, food.z);
+            float nearGrate = gate.position.x + 0.58f;
+            bool reachable = food.x >= nearGrate;
+            Vector3 stop = new Vector3(
+                Mathf.Max(nearGrate, food.x + Mathf.Sign(mouse.position.x - food.x) * 0.17f), 0f, food.z);
             yield return RunMouse(stop, RunDuration(stop));
             for (float elapsed = 0f; elapsed < 0.22f; elapsed += Time.deltaTime)
             {
@@ -120,7 +131,8 @@ public sealed class CellEscape : MonoBehaviour
             }
 
             mouseHead.localRotation = mouseHeadRest;
-            Destroy(crumb.gameObject);
+            if (reachable)
+                Destroy(crumb.gameObject);
             Vector3 retreat = new Vector3(Mathf.Clamp(food.x + 0.75f, gate.position.x + 0.9f, exit.position.x - 0.9f), 0f, mouseHome.z);
             yield return RunMouse(retreat, RunDuration(retreat));
             nextWander = Time.time + Random.Range(0.5f, 1.45f);
@@ -134,6 +146,8 @@ public sealed class CellEscape : MonoBehaviour
         Vector3 landing = new Vector3(bump.x + 0.38f, 0f, bump.z - 0.35f);
         StartCoroutine(MouseJump(landing, 0.37f, 0.12f));
         yield return DropKey();
+        if (followCamera != null)
+            followCamera.StopFramingSubject();
         stage = Stage.KeyBehindGate;
     }
 
@@ -297,12 +311,14 @@ public sealed class CellEscape : MonoBehaviour
         wanderStart = mouse.position;
         const float groundLane = 0.64f;
         var plane = new Plane(Vector3.forward, new Vector3(0f, 0f, groundLane));
-        float preferred = Mathf.Clamp(player.transform.position.x + Random.Range(0.65f, 2.5f), -6.45f, 6.45f);
+        float nearGrate = gate.position.x + 0.62f;
+        float farSide = exit.position.x - 0.75f;
+        float preferred = Mathf.Max(player.transform.position.x + 1.5f, nearGrate) + Random.Range(0.1f, 1.3f);
         Ray left = levelCamera.ViewportPointToRay(new Vector3(0.21f, 0.35f, 0f));
         Ray right = levelCamera.ViewportPointToRay(new Vector3(0.78f, 0.35f, 0f));
         if (plane.Raycast(left, out float leftDistance) && plane.Raycast(right, out float rightDistance))
             preferred = Mathf.Clamp(preferred, left.GetPoint(leftDistance).x, right.GetPoint(rightDistance).x);
-        float x = Mathf.Clamp(preferred, -6.45f, 6.45f);
+        float x = Mathf.Clamp(preferred, nearGrate, farSide);
         wanderTarget = new Vector3(x, 0f, Random.Range(0.44f, 0.71f));
         float distance = Vector3.Distance(wanderStart, wanderTarget);
         wanderDuration = Mathf.Max(0.30f, distance / Mathf.Lerp(1.20f, 2.9f, Mathf.Clamp01(distance / 4f)));
@@ -375,7 +391,16 @@ public sealed class CellEscape : MonoBehaviour
         yield return motion.Reach(-25f, 34f, 0.25f);
         yield return Move(key, motion.HandPosition, 0.26f, 0.10f);
         key.gameObject.SetActive(false);
-        yield return motion.Reach(54f, 0f, 0.26f);
+        yield return motion.Reach(54f, 0f, 0.22f);
+        for (float elapsed = 0f; elapsed < 0.22f; elapsed += Time.deltaTime)
+        {
+            motion.SetHandTarget(GateContact(), Mathf.SmoothStep(0f, 1f, elapsed / 0.22f));
+            yield return null;
+        }
+
+        motion.SetHandTarget(GateContact(), 1f);
+        sound.PlayOneShot(latch, 0.62f);
+        yield return new WaitForSeconds(0.18f);
         yield return Open(gate, 100f, Stage.GateOpen);
         motion.EndAction();
     }
@@ -393,16 +418,23 @@ public sealed class CellEscape : MonoBehaviour
         yield return TurnRodToward(stowed, direction);
         yield return SlideHook(stowed, keyOnFloor + Vector3.up * 0.17f, direction, 0.40f);
         yield return SlideHook(keyOnFloor + Vector3.up * 0.17f, keyOnFloor, direction, 0.19f);
+        sound.PlayOneShot(latch, 0.32f);
+        yield return new WaitForSeconds(0.25f);
         Vector3 retrieved = new Vector3(gate.position.x - 0.65f, keyOnFloor.y, 0.20f);
-        for (float elapsed = 0f; elapsed < 0.68f; elapsed += Time.deltaTime)
+        Quaternion keyRest = key.rotation;
+        const float dragDuration = 0.76f;
+        sound.PlayOneShot(scrape, 0.62f);
+        for (float elapsed = 0f; elapsed < dragDuration; elapsed += Time.deltaTime)
         {
-            float t = Mathf.SmoothStep(0f, 1f, elapsed / 0.68f);
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / dragDuration);
             key.position = Vector3.Lerp(keyOnFloor, retrieved, t);
+            key.rotation = keyRest * Quaternion.Euler(0f, 0f, Mathf.Sin(elapsed * 41f) * (1f - t) * 5f);
             PlaceHook(key.position, direction);
             yield return null;
         }
 
-        key.position = retrieved;
+        key.SetPositionAndRotation(retrieved, keyRest);
+        PlaceHook(retrieved, direction);
         yield return DiscardRod();
         rodInUse = false;
         stage = Stage.KeyWithinReach;
@@ -470,18 +502,29 @@ public sealed class CellEscape : MonoBehaviour
         rod.position = tip - rod.TransformVector(new Vector3(0.40f, 0.11f, 0f));
     }
 
+    private Vector3 GateContact()
+    {
+        return gateLock.position - gate.right * 0.055f;
+    }
+
     private IEnumerator Open(Transform door, float angle, Stage next)
     {
         moving = true;
         Collider blocker = door.GetComponent<Collider>();
         Quaternion closed = door.rotation;
         Quaternion open = Quaternion.AngleAxis(angle, Vector3.up) * closed;
-        for (float elapsed = 0f; elapsed < 0.45f; elapsed += Time.deltaTime)
+        const float duration = 0.56f;
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
         {
-            door.rotation = Quaternion.Slerp(closed, open, elapsed / 0.45f);
+            float t = elapsed / duration;
+            door.rotation = Quaternion.Slerp(closed, open, Mathf.SmoothStep(0f, 1f, t));
+            if (door == gate)
+                motion.SetHandTarget(GateContact(), 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.24f, 0.63f, t)));
             yield return null;
         }
 
+        if (door == gate)
+            motion.SetHandTarget(Vector3.zero, 0f);
         door.rotation = open;
         blocker.enabled = false;
         stage = next;
@@ -564,9 +607,32 @@ public sealed class CellEscape : MonoBehaviour
         return clip;
     }
 
+    private static AudioClip MakeScrape()
+    {
+        const int rate = 22050;
+        var samples = new float[Mathf.RoundToInt(rate * 0.76f)];
+        var grit = new System.Random(236);
+        float resonance = 0f;
+        for (int i = 0; i < samples.Length; i++)
+        {
+            float t = (float)i / rate;
+            float noise = (float)grit.NextDouble() * 2f - 1f;
+            resonance = Mathf.Lerp(resonance, noise, 0.22f);
+            float envelope = Mathf.Min(t / 0.035f, 1f) * Mathf.Clamp01((0.76f - t) / 0.12f);
+            float stutter = 0.62f + Mathf.Sin(t * 107f) * 0.28f;
+            samples[i] = envelope * stutter * (resonance * 0.65f + noise * 0.11f + Mathf.Sin(t * 2780f) * 0.065f);
+        }
+
+        var clip = AudioClip.Create("Iron key scraping stone", samples.Length, 1, rate, false);
+        clip.SetData(samples, 0);
+        return clip;
+    }
+
     private void OnDestroy()
     {
         Destroy(clang);
         Destroy(step);
+        Destroy(scrape);
+        Destroy(latch);
     }
 }

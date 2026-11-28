@@ -34,6 +34,12 @@ public sealed class CellMotion : MonoBehaviour
     private int facing = 1;
     private bool striding;
     private bool carryingRod;
+    private Vector3 sleeveRestPosition;
+    private Quaternion sleeveRestRotation;
+    private Vector3 sleeveRestScale;
+    private Vector3 handRestPosition;
+    private Vector3 handTarget;
+    private float handTargetWeight;
     public int Facing => facing;
     public bool OccupiesHand => heldBread != null || Busy;
     public bool Busy { get; private set; }
@@ -44,6 +50,10 @@ public sealed class CellMotion : MonoBehaviour
         footsteps = GetComponent<AudioSource>();
         rest = figure.localPosition;
         shoulder = Pivot("Throw Shoulder", sleeve.position + Vector3.up * 0.11f, sleeve, hand);
+        sleeveRestPosition = sleeve.localPosition;
+        sleeveRestRotation = sleeve.localRotation;
+        sleeveRestScale = sleeve.localScale;
+        handRestPosition = hand.localPosition;
         neck = Pivot("Neck", head.position - Vector3.up * 0.14f, head, nose, hair, eye);
         frontLeg = new LegPose(nearLeg, nearBoot);
         backLeg = new LegPose(farLeg, farBoot);
@@ -72,6 +82,12 @@ public sealed class CellMotion : MonoBehaviour
     public void SetCarryingRod(bool carrying)
     {
         carryingRod = carrying;
+    }
+
+    public void SetHandTarget(Vector3 target, float weight)
+    {
+        handTarget = target;
+        handTargetWeight = Mathf.Clamp01(weight);
     }
 
     public Vector3 HandPosition => hand.position;
@@ -141,7 +157,7 @@ public sealed class CellMotion : MonoBehaviour
 
     public void EndAction()
     {
-        armAngle = bend = chew = 0f;
+        armAngle = bend = chew = handTargetWeight = 0f;
         Busy = false;
     }
 
@@ -189,8 +205,27 @@ public sealed class CellMotion : MonoBehaviour
         float restingArm = carryingRod ? 42f - 7f * swing : -26f * swing;
         shoulder.localRotation = Quaternion.Euler(0f, 0f, Busy ? armAngle : heldBread != null ? 67f : restingArm);
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
+        AlignHand();
         if (heldBread != null)
             heldBread.transform.position = hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);
+    }
+
+    private void AlignHand()
+    {
+        sleeve.localPosition = sleeveRestPosition;
+        sleeve.localRotation = sleeveRestRotation;
+        sleeve.localScale = sleeveRestScale;
+        hand.localPosition = handRestPosition;
+        if (handTargetWeight <= 0f)
+            return;
+
+        Vector3 root = shoulder.position;
+        Vector3 wrist = Vector3.Lerp(hand.position, handTarget, handTargetWeight);
+        Vector3 arm = root - wrist;
+        sleeve.position = (root + wrist) * 0.5f;
+        sleeve.rotation = Quaternion.FromToRotation(Vector3.up, arm);
+        sleeve.localScale = new Vector3(sleeveRestScale.x, arm.magnitude, sleeveRestScale.z);
+        hand.position = wrist;
     }
 
     private sealed class LegPose
