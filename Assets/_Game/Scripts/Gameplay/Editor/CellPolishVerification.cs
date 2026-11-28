@@ -9,11 +9,12 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 [InitializeOnLoad]
-internal static class CellPolishVerification
+internal static partial class CellPolishVerification
 {
     private const string Cell = "Assets/_Game/Scenes/Levels/Cell.unity";
     private const string Request = "Library/CellPolishVerify.request";
     private const string OutputKey = "CellPolishVerification.Output";
+    private const string RateKey = "CellPolishVerification.Rate";
     private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.NonPublic;
     private static string output;
     private static SideViewPlayer player;
@@ -23,8 +24,10 @@ internal static class CellPolishVerification
     private static Transform figure, shoulder, hand, sleeve, nearBoot, farBoot, mouse, rod, gate, key, exit;
     private static Rigidbody body;
     private static Camera view;
-    private static int phase, lastFrame, frames, errors;
-    private static float began, phaseTime, walkStart, armLength, wakeStep, armStretch, floorGap, floorDepth, aimError;
+    private static int phase, lastFrame, frames, errors, editorErrors;
+    private static int previousCaptureFramerate;
+    private static bool previousRunInBackground;
+    private static float began, phaseTime, walkStart, armLength, wakeStep, armStretch, floorGap, floorDepth;
     private static Vector3 previousFigure;
     private static bool wasWaking;
     private static bool active;
@@ -32,6 +35,7 @@ internal static class CellPolishVerification
     static CellPolishVerification()
     {
         EditorApplication.update += Update;
+        EditorApplication.playModeStateChanged += OnPlayModeChanged;
     }
 
     [MenuItem("Game Jam/Verify Cell Motion")]
@@ -45,11 +49,12 @@ internal static class CellPolishVerification
         Run(Path.GetFullPath("Temp/CellPolishVerification"), true);
     }
 
-    private static void Run(string directory, bool build)
+    private static void Run(string directory, bool build, int rate = DefaultSampleRate)
     {
         Directory.CreateDirectory(directory);
         output = directory;
         SessionState.SetString(OutputKey, output);
+        SessionState.SetInt(RateKey, rate);
         EditorSceneManager.OpenScene(Cell);
         CheckSceneReferences();
         if (build)
@@ -73,7 +78,8 @@ internal static class CellPolishVerification
         {
             string[] request = File.ReadAllLines(Request);
             File.Delete(Request);
-            Run(request[0], request.Length > 1 && request[1] == "build");
+            int rate = request.Length > 2 && int.TryParse(request[2], out int value) ? Mathf.Clamp(value, 30, 120) : DefaultSampleRate;
+            Run(request[0], request.Length > 1 && request[1] == "build", rate);
             return;
         }
 
@@ -119,8 +125,13 @@ internal static class CellPolishVerification
 
     private static void Begin()
     {
-        errors = phase = frames = 0;
-        wakeStep = armStretch = floorGap = floorDepth = aimError = 0f;
+        errors = editorErrors = phase = frames = 0;
+        wakeStep = armStretch = floorGap = floorDepth = 0f;
+        previousCaptureFramerate = Time.captureFramerate;
+        SampleRate = SessionState.GetInt(RateKey, DefaultSampleRate);
+        Time.captureFramerate = SampleRate;
+        previousRunInBackground = Application.runInBackground;
+        Application.runInBackground = true;
         wasWaking = false;
         Application.logMessageReceived += OnLog;
         player = Object.FindFirstObjectByType<SideViewPlayer>();
@@ -147,12 +158,15 @@ internal static class CellPolishVerification
         Record($"Player visual: {figure.childCount} immediate children, {figure.GetComponentsInChildren<SkinnedMeshRenderer>().Length} skinned renderers. Rat: {rat.bones.Length} skin bones, readable mesh={rat.sharedMesh.isReadable}, vertices={rat.sharedMesh.vertexCount}");
         foreach (Transform bone in rat.bones)
             Record($"Rat bone {bone.name}: {rat.transform.InverseTransformPoint(bone.position):F3}");
+        InitializeMetrics();
         active = true;
     }
 
     private static void Tick()
     {
         frames++;
+        if (sleeve != null)
+            SampleMotion();
         if (sleeve != null)
             armStretch = Mathf.Max(armStretch, Mathf.Abs(sleeve.localScale.y / armLength - 1f));
         if (Time.time - began > 55f)
@@ -171,15 +185,14 @@ internal static class CellPolishVerification
                         Capture("01-wake-start");
                     else
                         wakeStep = Mathf.Max(wakeStep, Vector3.Distance(previousFigure, figure.position));
-                    if (Time.time - phaseTime > 1.15f && Time.time - phaseTime < 1.15f + Time.deltaTime)
-                        Capture("02-wake-sit");
+                    CaptureWakeMilestones(Time.time - phaseTime);
                     previousFigure = figure.position;
                     wasWaking = true;
                     return;
                 }
                 if (!wasWaking && Time.time - phaseTime < 0.3f)
                     return;
-                Record($"Wake: max consecutive figure displacement={wakeStep:F4} m at the observed frame rate, input root drift={Mathf.Abs(body.position.x - walkStart):F4} m");
+                Record($"Wake: maximum consecutive figure displacement={wakeStep:F4} m at {SampleRate} Hz, input root drift={Mathf.Abs(body.position.x - walkStart):F4} m");
                 Capture("03-wake-end");
                 Next();
                 break;
@@ -196,15 +209,8 @@ internal static class CellPolishVerification
             case 2:
                 Move(0f);
                 ProbeFloor();
-                Vector3 upAim = new Vector3(0.8f, 0.6f, 0f);
-                MethodInfo setAim = motion.GetType().GetMethod("SetAim", Instance | BindingFlags.Public);
-                if (setAim != null)
-                    setAim.Invoke(motion, new object[] { upAim, true });
-                if (Time.time - phaseTime < 0.35f)
+                if (!TickAim())
                     return;
-                aimError = Vector3.Angle(hand.position - shoulder.position, upAim);
-                Record($"Aim: right/up steady-state shoulder-to-hand error={aimError:F2} degrees");
-                Capture("04-aim");
                 LaunchBread();
                 Next();
                 break;
@@ -285,26 +291,6 @@ internal static class CellPolishVerification
         throw new InvalidOperationException("No bread trajectory reaches the hanging key from the table.");
     }
 
-    private static void ProbeFloor()
-    {
-        foreach (var boot in new[] { nearBoot, farBoot })
-        {
-            Renderer renderer = boot.GetComponent<Renderer>();
-            if (renderer == null)
-                continue;
-            float sole = renderer.bounds.min.y;
-            var start = new Vector3(boot.position.x, sole + 0.3f, boot.position.z);
-            foreach (var hit in Physics.RaycastAll(start, Vector3.down, 0.7f, ~0, QueryTriggerInteraction.Ignore))
-            {
-                if (hit.rigidbody == body || hit.normal.y < 0.7f)
-                    continue;
-                floorGap = Mathf.Max(floorGap, sole - hit.point.y);
-                floorDepth = Mathf.Max(floorDepth, hit.point.y - sole);
-                break;
-            }
-        }
-    }
-
     private static void Move(float input)
     {
         player.GetType().GetField("moveInput", Instance).SetValue(player, input);
@@ -367,18 +353,40 @@ internal static class CellPolishVerification
     {
         if (type == LogType.Log)
             return;
-        errors++;
-        Record($"{type}: {condition}\n{stack}");
+        bool search = stack.Contains("UnityEditor.Search.SearchDatabase") && stack.Contains("IndexationOnStartup");
+        if (search)
+            editorErrors++;
+        else
+            errors++;
+        Record($"{(search ? "Editor startup" : "Gameplay")} {type}: {condition}\n{stack}");
     }
 
     private static void Finish(string result)
     {
-        Record($"Run: {frames} observed frames, recorded runtime warnings/errors={errors}, max sleeve length change={armStretch:P1}, idle foot gap={floorGap:F3} m, idle floor penetration={floorDepth:F3} m");
+        Record($"Run: {frames} observed frames at {SampleRate} Hz, gameplay warnings/errors={errors}, known editor startup exceptions={editorErrors}, max sleeve length change={armStretch:P1}, idle foot gap={floorGap:F3} m, idle floor penetration={floorDepth:F3} m");
         Record(result);
-        active = false;
-        Application.logMessageReceived -= OnLog;
+        if (active)
+            ReportMotionMetrics();
+        ResetRun();
         SessionState.EraseString(OutputKey);
         EditorApplication.isPlaying = false;
+    }
+
+    private static void OnPlayModeChanged(PlayModeStateChange state)
+    {
+        if (state == PlayModeStateChange.ExitingPlayMode && active)
+        {
+            ResetRun();
+            SessionState.EraseString(OutputKey);
+        }
+    }
+
+    private static void ResetRun()
+    {
+        Time.captureFramerate = previousCaptureFramerate;
+        Application.runInBackground = previousRunInBackground;
+        active = false;
+        Application.logMessageReceived -= OnLog;
     }
 
     private static void Record(string line) => File.AppendAllText(Path.Combine(output, "verification.log"), line + Environment.NewLine);
