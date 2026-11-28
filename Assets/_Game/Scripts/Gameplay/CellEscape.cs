@@ -19,6 +19,7 @@ public sealed class CellEscape : MonoBehaviour
 
     [SerializeField, Range(0f, 0.5f)] private float keyBounce = 0.22f;
     [SerializeField] private Vector3 keyReleaseSpin = new Vector3(2.8f, -0.9f, 3f);
+    [SerializeField] private Renderer keyWallFace;
 
     private enum Stage { FindBread, MouseJumping, KeyBehindGate, KeyWithinReach, GateOpen, ExitOpen, Complete }
 
@@ -161,7 +162,7 @@ public sealed class CellEscape : MonoBehaviour
     {
         key.SetParent(null, true);
         var fallingKey = key.gameObject.AddComponent<CellKeyFall>();
-        Rigidbody keyBody = fallingKey.Begin(keyBounce, keyReleaseSpin);
+        Rigidbody keyBody = fallingKey.Begin(keyBounce, keyReleaseSpin, keyWallFace);
         var physicsTick = new WaitForFixedUpdate();
         bool playedImpact = false;
         float restingTime = 0f;

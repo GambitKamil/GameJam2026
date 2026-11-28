@@ -34709,6 +34709,7 @@ MonoBehaviour:
   mouseTailResponse: 0.085
   keyBounce: 0.22
   keyReleaseSpin: {x: 2.8, y: -0.9, z: 3}
+  keyWallFace: {fileID: 1282303262}
 --- !u!4 &1046658314
 Transform:
   m_ObjectHideFlags: 0

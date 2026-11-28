@@ -4,6 +4,10 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 internal sealed class CellKeyFall : MonoBehaviour
 {
+    // Keep a small gap between the rotating key and the visible wall face.
+    private const float WallSkin = 0.008f;
+    private const float ReleaseSpeed = 0.34f;
+
     private Renderer[] parts;
     private BoxCollider[] shapes;
     private Rigidbody body;
@@ -11,14 +15,16 @@ internal sealed class CellKeyFall : MonoBehaviour
     private float supportHeight;
     private float floorHeight;
     private bool hasFloor;
+    private float wallLimit;
 
     public bool HitFloor { get; private set; }
 
-    public Rigidbody Begin(float bounce, Vector3 spin)
+    public Rigidbody Begin(float bounce, Vector3 spin, Renderer wallFace)
     {
         hasFloor = Physics.Raycast(transform.position, Vector3.down, out RaycastHit floor, 5f, ~0, QueryTriggerInteraction.Ignore);
         floorHeight = floor.point.y;
         parts = GetComponentsInChildren<MeshRenderer>();
+        wallLimit = wallFace != null ? wallFace.bounds.min.z - WallSkin : float.PositiveInfinity;
         impactMaterial = new PhysicsMaterial("Key Impact")
         {
             dynamicFriction = 0.42f,
@@ -52,9 +58,11 @@ internal sealed class CellKeyFall : MonoBehaviour
         body.solverVelocityIterations = 4;
         body.interpolation = RigidbodyInterpolation.None;
         body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-        // Keep the drop beside the hook, near the edge of the floor collider.
-        body.constraints = RigidbodyConstraints.FreezePositionX | RigidbodyConstraints.FreezePositionZ;
-        body.linearVelocity = Vector3.zero;
+        // Release from the wall into the corridor with the same lateral hook alignment.
+        body.constraints = RigidbodyConstraints.FreezePositionX;
+        if (wallFace == null)
+            body.constraints |= RigidbodyConstraints.FreezePositionZ;
+        body.linearVelocity = wallFace == null ? Vector3.zero : Vector3.back * ReleaseSpeed;
         body.angularVelocity = transform.TransformDirection(spin);
         return body;
     }
@@ -77,6 +85,7 @@ internal sealed class CellKeyFall : MonoBehaviour
 
     public void ResolveFloorContact()
     {
+        ResolveWallContact();
         if (!hasFloor)
             return;
 
@@ -97,6 +106,31 @@ internal sealed class CellKeyFall : MonoBehaviour
 
         if (!HitFloor)
             MarkFloorImpact(floorHeight);
+    }
+
+    private void ResolveWallContact()
+    {
+        if (float.IsPositiveInfinity(wallLimit))
+            return;
+
+        float rear = float.NegativeInfinity;
+        foreach (Renderer part in parts)
+            if (part.enabled)
+                rear = Mathf.Max(rear, part.bounds.max.z);
+
+        float penetration = rear - wallLimit;
+        if (penetration <= 0f)
+            return;
+
+        Vector3 corrected = transform.position - Vector3.forward * penetration;
+        if (!body.isKinematic)
+        {
+            body.position = corrected;
+            Vector3 velocity = body.linearVelocity;
+            velocity.z = Mathf.Min(0f, velocity.z);
+            body.linearVelocity = velocity;
+        }
+        transform.position = corrected;
     }
 
     private void MarkFloorImpact(float height)
@@ -149,6 +183,7 @@ internal sealed class CellKeyFall : MonoBehaviour
     {
         transform.SetPositionAndRotation(position, rotation);
         transform.position += Vector3.up * (supportHeight + gap - LowestPart());
+        ResolveWallContact();
     }
 
     private void OnDestroy()
