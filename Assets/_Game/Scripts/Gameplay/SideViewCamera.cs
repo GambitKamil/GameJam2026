@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(200)]
 public sealed class SideViewCamera : MonoBehaviour
 {
     [SerializeField] private Transform target;
@@ -9,6 +10,7 @@ public sealed class SideViewCamera : MonoBehaviour
 
     [SerializeField] private float horizontalOffset;
     [SerializeField, Min(0f)] private float lookAhead;
+    [SerializeField, Min(0.01f)] private float lookAheadTurnTime = 0.08f;
 
     [SerializeField] private Transform framingSubject;
 
@@ -18,6 +20,8 @@ public sealed class SideViewCamera : MonoBehaviour
     private bool usesSubjectFraming;
     private float horizontalVelocity;
     private float direction = 1f;
+    private float lookAheadDirection = 1f;
+    private float lookAheadVelocity;
     private Rigidbody targetBody;
 
     private void Awake()
@@ -51,7 +55,8 @@ public sealed class SideViewCamera : MonoBehaviour
         if (lookAhead > 0f && targetBody != null && Mathf.Abs(targetBody.linearVelocity.x) > 0.15f)
             direction = Mathf.Sign(targetBody.linearVelocity.x);
 
-        float targetX = target.position.x + lookAhead * direction;
+        lookAheadDirection = Mathf.SmoothDamp(lookAheadDirection, direction, ref lookAheadVelocity, lookAheadTurnTime);
+        float targetX = target.position.x + lookAhead * lookAheadDirection;
         if (constrainHorizontalPosition)
             targetX = Mathf.Clamp(targetX, horizontalLimits.x, horizontalLimits.y);
         targetX += horizontalOffset;
@@ -65,6 +70,7 @@ public sealed class SideViewCamera : MonoBehaviour
             position.x, targetX, ref horizontalVelocity, smoothTime);
         transform.position = position;
     }
+
     private float FramingX(float x, out float size)
     {
         size = baseOrthographicSize;

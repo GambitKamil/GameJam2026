@@ -17,7 +17,6 @@ public sealed partial class CellMotion : MonoBehaviour
     [SerializeField] private Transform eye;
     [SerializeField] private Renderer bunkMattress;
 
-    private Rigidbody body;
     private SideViewPlayer player;
     private CellAnimationLibrary library;
     private CellAnimationLibrary.Motion gesture;
@@ -41,7 +40,6 @@ public sealed partial class CellMotion : MonoBehaviour
     private float bend;
     private float chew;
     private int facing = 1;
-    private bool striding;
     private bool carryingRod;
     private Vector3 handTarget;
     private float handTargetWeight;
@@ -52,7 +50,6 @@ public sealed partial class CellMotion : MonoBehaviour
 
     private void Awake()
     {
-        body = GetComponent<Rigidbody>();
         player = GetComponent<SideViewPlayer>();
         library = GetComponent<CellAnimationLibrary>();
         footsteps = GetComponent<AudioSource>();
@@ -62,6 +59,7 @@ public sealed partial class CellMotion : MonoBehaviour
         neck = Pivot("Neck", head.position - Vector3.up * 0.14f, head, nose, hair, eye);
         frontLeg = new LegPose(nearLeg, nearBoot);
         backLeg = new LegPose(farLeg, farBoot);
+        InitializeLocomotion();
         Vector3 hips = (frontLeg.Hip + backLeg.Hip) * 0.5f;
         torso = Pivot("Torso at Hips", figure.TransformPoint(hips), figure.Find("Jacket"),
             figure.Find("Jacket Seam"), shoulder, neck);
@@ -198,20 +196,8 @@ public sealed partial class CellMotion : MonoBehaviour
         if (WakingUp)
             return;
 
-        float x = body.linearVelocity.x;
-        float speed = Mathf.Abs(x);
-        if (speed > 0.2f && !Busy)
-            Face(x);
-        gait = Mathf.MoveTowards(gait, Busy ? 0f : Mathf.Clamp01(speed / 3.5f), Time.deltaTime * 10f);
-        float previous = phase;
-        if (!Busy && speed > 0.04f)
-            phase += speed * Time.deltaTime * (2f * Mathf.PI / 0.87f);
-        bool walking = gait > 0.19f;
-        if (walking && (!striding || Mathf.FloorToInt(previous / Mathf.PI) != Mathf.FloorToInt(phase / Mathf.PI)))
-            footsteps.PlayOneShot(boot, Mathf.Lerp(0.42f, 0.17f, crouchBlend));
-        striding = walking;
-
-        figure.localScale = new Vector3(facing, 1f, 1f);
+        float speed = UpdateLocomotion();
+        UpdateFigureFacing();
         figure.localPosition = rest;
         float swing = Mathf.Sin(phase) * gait;
         crouchBlend = Mathf.MoveTowards(crouchBlend, !Busy && player.Crouching ? 1f : 0f, Time.deltaTime * 5.5f);
@@ -224,23 +210,11 @@ public sealed partial class CellMotion : MonoBehaviour
         float pitch = -33f * crouch - 5f * gait - lean;
         float restingArm = carryingRod ? 42f - 7f * swing : -26f * swing;
         float arm = Busy ? armAngle : heldBread != null ? 67f : restingArm;
-        Vector3 nearStride = Vector3.zero;
-        Vector3 farStride = Vector3.zero;
-        float strideBlend = 0f;
         if (library != null)
         {
-            bool walkingPose = gait > 0.08f;
-            bool low = crouchBlend > 0.45f;
-            var clip = walkingPose
-                ? (low ? CellAnimationLibrary.Motion.CrouchWalk : CellAnimationLibrary.Motion.Walk)
-                : (low ? CellAnimationLibrary.Motion.CrouchIdle : CellAnimationLibrary.Motion.Idle);
-            float time = walkingPose ? Mathf.Repeat(phase / (2f * Mathf.PI), 1f) : Mathf.Repeat(Time.time * 0.4f, 1f);
-            var locomotion = library.Sample(clip, time);
+            var locomotion = SampleLocomotion();
             if (!Busy)
             {
-                strideBlend = Mathf.SmoothStep(0f, 1f, gait * 2.5f);
-                nearStride = locomotion.NearStride * gait;
-                farStride = locomotion.FarStride * gait;
                 hipOffset.y = Mathf.Lerp(hipOffset.y, locomotion.HipHeightDelta * 0.82f, 0.64f);
                 pitch = Mathf.Lerp(pitch, locomotion.TorsoPitch - lean, 0.65f);
                 if (!carryingRod && heldBread == null)
@@ -258,10 +232,9 @@ public sealed partial class CellMotion : MonoBehaviour
             }
         }
 
+        hipOffset = PoseGroundedFeet(hipOffset);
         torso.localPosition = (frontLeg.Hip + backLeg.Hip) * 0.5f + hipOffset;
         torso.localRotation = Quaternion.Euler(0f, 0f, pitch);
-        frontLeg.Pose(phase, gait, hipOffset, crouch, nearStride, strideBlend);
-        backLeg.Pose(phase + Mathf.PI, gait, hipOffset, crouch, farStride, strideBlend);
         shoulder.localRotation = Quaternion.Euler(0f, 0f, arm);
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
         ApplyAimPose();
