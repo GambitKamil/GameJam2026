@@ -6,6 +6,7 @@ internal sealed class CellMouseMotion
 {
     private const int FirstLegBone = 5;
     private const float ContactFraction = 0.54f;
+    private const float MinimumReplantTime = 0.04f;
     private const float FastSpeed = 6.3f;
     private static readonly string[] PawNames = { "Front Left Paw", "Front Right Paw", "Rear Left Paw", "Rear Right Paw" };
     private readonly Transform root;
@@ -129,7 +130,8 @@ internal sealed class CellMouseMotion
         float gaitAngle = gait * Mathf.PI * 2f;
         float activity = Mathf.Clamp01((speed + turnTravel / dt) / 0.75f);
 
-        if (wasAirborne && !IsAirborne)
+        bool landed = wasAirborne && !IsAirborne;
+        if (landed)
             landingCompression = 1f;
         wasAirborne = IsAirborne;
         aerialWeight = Mathf.SmoothDamp(aerialWeight, IsAirborne ? 1f : 0f, ref airVelocity, 0.045f, Mathf.Infinity, dt);
@@ -148,7 +150,7 @@ internal sealed class CellMouseMotion
             body.SetPositionAndRotation(root.position + Vector3.up * weightDrop * (1f - aerialWeight), pose);
             Vector3 travelDirection = distance > 0.0001f ? travel / distance : flat * Vector3.right;
             foreach (Paw paw in paws)
-                UpdatePaw(paw, previousGait, stride, travelDirection, flat, activity, dt);
+                UpdatePaw(paw, previousGait, stride, travelDirection, flat, activity, landed, dt);
         }
         else
             root.rotation = pose;
@@ -188,6 +190,11 @@ internal sealed class CellMouseMotion
         return true;
     }
 
+    public int GetPawContactSequence(int index) =>
+        paws != null && (uint)index < (uint)paws.Length && paws[index].Planted
+            ? paws[index].ContactSequence
+            : -1;
+
     public void Release()
     {
         if (mesh != null)
@@ -202,14 +209,27 @@ internal sealed class CellMouseMotion
     }
 
     private void UpdatePaw(Paw paw, float previousGait, float stride, Vector3 travelDirection,
-        Quaternion flat, float activity, float dt)
+        Quaternion flat, float activity, bool landed, float dt)
     {
-        float progress = Mathf.Repeat(gait + paw.PhaseOffset, 1f);
+        float step = gait + paw.PhaseOffset;
+        int cycle = Mathf.FloorToInt(step);
+        float progress = step - cycle;
+        bool newCycle = cycle != Mathf.FloorToInt(previousGait + paw.PhaseOffset);
+        bool moving = activity > 0.08f;
         Vector3 home = root.position + flat * paw.RestFoot;
         Vector3 nominalTravel = home - paw.PreviousHome;
         nominalTravel.y = 0f;
         if (nominalTravel.sqrMagnitude > 0.000004f && paw.Initialized)
             travelDirection = nominalTravel.normalized;
+
+        // Fast authored runs can cross a whole swing between render frames.
+        // Give that step time to leave the floor before establishing a new contact.
+        if (!IsAirborne && moving && newCycle && progress <= ContactFraction && paw.Planted)
+        {
+            paw.ReplantStart = paw.Sole;
+            paw.ReplantRemaining = MinimumReplantTime;
+            paw.Planted = false;
+        }
 
         Vector3 foot;
         if (IsAirborne)
@@ -219,38 +239,102 @@ internal sealed class CellMouseMotion
             Vector3 flightFoot = body.TransformPoint(paw.RestFoot + lift) - Vector3.up * paw.SoleDepth;
             foot = paw.Initialized ? Vector3.Lerp(paw.Sole, flightFoot, 1f - Mathf.Exp(-36f * dt)) : flightFoot;
             paw.Planted = false;
+            paw.LiftStart = foot;
+            paw.ReplantRemaining = 0f;
         }
-        else if (activity > 0.08f && progress > ContactFraction)
+        else if (paw.ReplantRemaining > 0f)
         {
-            float swing = Mathf.InverseLerp(ContactFraction, 1f, progress);
-            Vector3 touchdown = OnFloor(home + travelDirection * (stride * (1f - progress + ContactFraction * 0.5f)));
-            foot = paw.Initialized ? Vector3.Lerp(paw.Anchor, touchdown, Mathf.SmoothStep(0f, 1f, swing)) : touchdown;
-            foot.y += Mathf.Sin(Mathf.PI * swing) * Mathf.Lerp(stepHeight.x, stepHeight.y, activity);
-            paw.Planted = false;
+            paw.ReplantRemaining = Mathf.Max(0f, paw.ReplantRemaining - Mathf.Min(dt, MinimumReplantTime * 0.75f));
+            float stepProgress = 1f - paw.ReplantRemaining / MinimumReplantTime;
+            bool supported = FindFootprint(paw, home + travelDirection * (stride * ContactFraction * 0.5f), out Vector3 touchdown);
+            foot = Vector3.Lerp(paw.ReplantStart, touchdown, Mathf.SmoothStep(0f, 1f, stepProgress));
+            foot.y += Mathf.Sin(stepProgress * Mathf.PI) * stepHeight.y;
+            if (paw.ReplantRemaining <= 0f && (!moving || progress <= ContactFraction))
+                SetContact(paw, foot, supported);
+        }
+        else if (!moving || progress <= ContactFraction)
+        {
+            if (!paw.Initialized || landed || (moving && newCycle))
+            {
+                // Track each touchdown independently even if a render frame has crossed a whole swing.
+                float lead = moving ? ContactFraction * 0.5f - progress : 0f;
+                bool supported = FindFootprint(paw, home + travelDirection * (stride * lead), out foot);
+                SetContact(paw, foot, supported);
+            }
+            else if (paw.Planted && paw.CanReach(paw.Anchor))
+                foot = paw.Anchor;
+            else if (moving && paw.Planted)
+            {
+                // Release a trailing paw before the hip can pull it off its support.
+                paw.LiftStart = paw.Sole;
+                paw.ReleasedCycle = cycle;
+                paw.ReleaseProgress = progress;
+                paw.Planted = false;
+                foot = SwingPaw(paw, progress, paw.ReleaseProgress, stride, home, travelDirection, activity);
+            }
+            else if (!moving || paw.ReleasedCycle != cycle)
+            {
+                // A swing interrupted by a stop should finish at the floor without a position reset.
+                bool supported = FindFootprint(paw, moving ? home : paw.Sole, out Vector3 settle);
+                foot = Vector3.MoveTowards(paw.Sole, settle, dt * Mathf.Max(1.3f, speed * 1.4f));
+                SetContact(paw, foot, supported && (foot - settle).sqrMagnitude <= 0.00000001f);
+                if (moving && !paw.Planted)
+                {
+                    paw.LiftStart = paw.Sole;
+                    paw.ReleasedCycle = cycle;
+                    paw.ReleaseProgress = progress;
+                }
+            }
+            else
+                foot = SwingPaw(paw, progress, paw.ReleaseProgress, stride, home, travelDirection, activity);
         }
         else
         {
-            bool touchdown = Mathf.Floor(gait + paw.PhaseOffset) > Mathf.Floor(previousGait + paw.PhaseOffset);
-            if (!paw.Initialized || touchdown)
-            {
-                float lead = ContactFraction * 0.5f - progress;
-                paw.Anchor = OnFloor(home + travelDirection * (activity * stride * lead));
-                paw.Planted = true;
-            }
-            else if (!paw.Planted)
-            {
-                Vector3 settle = OnFloor(activity > 0.08f ? home : paw.Sole);
-                foot = Vector3.MoveTowards(paw.Sole, settle, dt * 0.8f);
-                paw.Anchor = foot;
-                paw.Planted = (foot - settle).sqrMagnitude < 0.000001f;
-            }
-            foot = paw.Anchor;
+            if (paw.Planted || newCycle || landed)
+                paw.LiftStart = paw.Sole;
+            paw.Planted = false;
+            foot = SwingPaw(paw, progress, ContactFraction, stride, home, travelDirection, activity);
         }
 
-        paw.Sole = foot;
         paw.PreviousHome = home;
         paw.Initialized = true;
         paw.Solve(foot + Vector3.up * paw.SoleDepth, flat, body);
+        paw.Sole = paw.Foot.position - Vector3.up * paw.SoleDepth;
+    }
+
+    private Vector3 SwingPaw(Paw paw, float progress, float liftStart, float stride, Vector3 home, Vector3 direction, float activity)
+    {
+        float swing = Mathf.InverseLerp(liftStart, 1f, progress);
+        FindFootprint(paw, home + direction * (stride * (1f - progress + ContactFraction * 0.5f)), out Vector3 touchdown);
+        Vector3 foot = Vector3.Lerp(paw.LiftStart, touchdown, Mathf.SmoothStep(0f, 1f, swing));
+        foot.y += Mathf.Sin(Mathf.PI * swing) * Mathf.Lerp(stepHeight.x, stepHeight.y, activity);
+        return foot;
+    }
+
+    private bool FindFootprint(Paw paw, Vector3 position, out Vector3 floor)
+    {
+        floor = OnFloor(position);
+        if (paw.CanReach(floor))
+            return true;
+
+        // Reduce an overlong step at a sharp turn. During stance the existing
+        // contact stays fixed until the paw lifts, so the IK cannot drag it.
+        Vector3 hip = paw.Hip.position;
+        for (int i = 1; i <= 3; i++)
+        {
+            floor = OnFloor(Vector3.Lerp(position, hip, i / 3f));
+            if (paw.CanReach(floor))
+                return true;
+        }
+        return false;
+    }
+
+    private static void SetContact(Paw paw, Vector3 foot, bool supported)
+    {
+        paw.Planted = supported;
+        paw.Anchor = foot;
+        if (supported)
+            paw.ContactSequence++;
     }
 
     private Vector3 OnFloor(Vector3 position)
@@ -367,8 +451,12 @@ internal sealed class CellMouseMotion
         public readonly float SoleDepth;
         private readonly Vector3 upperRest, lowerRest, kneePole;
         private readonly float upperLength, lowerLength;
-        public Vector3 Anchor, Sole, PreviousHome;
+        public Vector3 Anchor, Sole, PreviousHome, LiftStart, ReplantStart;
+        public float ReplantRemaining;
         public bool Initialized, Planted;
+        public int ContactSequence;
+        public int ReleasedCycle = -1;
+        public float ReleaseProgress;
 
         public Paw(Transform body, int index)
         {
@@ -387,6 +475,13 @@ internal sealed class CellMouseMotion
             Hip = MakeBone(PawNames[index] + " Hip", body, hip);
             Knee = MakeBone(PawNames[index] + " Knee", Hip, upperRest);
             Foot = MakeBone(PawNames[index], Knee, lowerRest);
+        }
+
+        public bool CanReach(Vector3 sole)
+        {
+            float length = Vector3.Distance(sole + Vector3.up * SoleDepth, Hip.position);
+            return length >= Mathf.Abs(upperLength - lowerLength) + 0.0001f &&
+                   length <= upperLength + lowerLength - 0.0001f;
         }
 
         public void Solve(Vector3 target, Quaternion flat, Transform body)
