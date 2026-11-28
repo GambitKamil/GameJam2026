@@ -6,6 +6,21 @@ public sealed partial class CellMotion
 {
     [SerializeField, Min(0.1f)] private float wakeDurationScale = 1f;
 
+    [SerializeField, Min(0.005f)] private float wakeRodClearance = 0.012f;
+
+    private Transform wakeRod;
+    private Vector3 wakeRodCenter;
+    private Vector3 wakeRodAxis;
+    private Vector3 wakeRodNormal;
+    private float wakeRodHalfWidth;
+    private float wakeRodHalfLength;
+    private float wakeRodTop;
+
+    internal void SetWakeRod(Transform rod)
+    {
+        wakeRod = rod;
+    }
+
     private Vector3 wakeHips;
     private Vector3 wakeNearHome;
     private Vector3 wakeFarHome;
@@ -19,11 +34,14 @@ public sealed partial class CellMotion
         wakeHips = (frontLeg.Hip + backLeg.Hip) * 0.5f;
         wakeNearHome = nearBoot.localPosition;
         wakeFarHome = farBoot.localPosition;
+        CacheWakeRod();
         Bounds mattress = bunkMattress.bounds;
         Vector3 standing = transform.TransformPoint(rest + wakeHips);
-        Vector3 nearFoot = transform.TransformPoint(rest + wakeNearHome);
-        Vector3 farFoot = transform.TransformPoint(rest + wakeFarHome);
-        Vector3 parkedFarFoot = farFoot + Vector3.forward * 0.24f;
+        Vector3 nearFoot = WakePlant(transform.TransformPoint(rest + wakeNearHome), nearBoot, nearFootContact);
+        Vector3 farHome = transform.TransformPoint(rest + wakeFarHome);
+        Vector3 farFoot = WakePlant(farHome, farBoot, farFootContact);
+        Vector3 parkedFarFoot = WakePlant(farHome + Vector3.forward * 0.24f, farBoot, farFootContact);
+        float farSoleDepth = farBoot.position.y - farBoot.GetComponent<Renderer>().bounds.min.y;
         Vector3 weightTransfer = standing + new Vector3(0f, -0.24f, 0.26f);
         Vector3 halfRise = standing + new Vector3(0f, -0.105f, 0.13f);
 
@@ -80,9 +98,9 @@ public sealed partial class CellMotion
             PoseWakeWorld(Vector3.Lerp(seated, weightTransfer, t), rotation, Mathf.Lerp(-10f, -31f, t),
                 Mathf.Lerp(-24f, 28f, t),
                 WakeFootArc(nearDangling, nearFoot, t, 0.045f),
-                WakeFootArc(farDangling, parkedFarFoot, farProgress, 0.034f),
+                WakeStepAcrossRod(farDangling, parkedFarFoot, farProgress, 0.034f, farSoleDepth),
                 Quaternion.Slerp(seatedRotation, Quaternion.identity, t),
-                Quaternion.Slerp(seatedRotation, plantedRotation, farProgress));
+                Quaternion.Slerp(seatedRotation, plantedRotation, farProgress), Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.1f, 0.75f, t)));
         });
         footsteps.PlayOneShot(boot, 0.24f);
 
@@ -92,7 +110,7 @@ public sealed partial class CellMotion
             SetWakeCapsule(capsule, capsuleHeight, capsuleCenter, Mathf.Lerp(0.28f, 0.67f, t));
             PoseWakeWorld(Vector3.Lerp(weightTransfer, halfRise, t),
                 Quaternion.Slerp(plantedRotation, midTurn, t), Mathf.Lerp(-31f, -14f, t), Mathf.Lerp(28f, 15f, t),
-                nearFoot, parkedFarFoot, Quaternion.identity, plantedRotation);
+                nearFoot, parkedFarFoot, Quaternion.identity, plantedRotation, 1f);
         });
 
         yield return MoveWake(0.38f, t =>
@@ -100,7 +118,7 @@ public sealed partial class CellMotion
             // The near foot bears the weight while the trailing foot steps onto the movement lane.
             float step = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 0.82f, t));
             Vector3 liveStanding = transform.TransformPoint(rest + wakeHips);
-            Vector3 liveFarFoot = transform.TransformPoint(rest + wakeFarHome);
+            Vector3 liveFarFoot = wakeRodNormal == Vector3.zero ? transform.TransformPoint(rest + wakeFarHome) : farFoot;
             float pitch = Mathf.Lerp(-14f, 0f, t);
             if (library != null)
             {
@@ -110,9 +128,16 @@ public sealed partial class CellMotion
 
             SetWakeCapsule(capsule, capsuleHeight, capsuleCenter, Mathf.Lerp(0.67f, 1f, t));
             PoseWakeWorld(Vector3.Lerp(halfRise, liveStanding, t), Quaternion.Slerp(midTurn, Quaternion.identity, t),
-                pitch, Mathf.Lerp(15f, 0f, t), nearFoot, WakeFootArc(parkedFarFoot, liveFarFoot, step, 0.075f),
-                Quaternion.identity, Quaternion.Slerp(plantedRotation, Quaternion.identity, step));
+                pitch, Mathf.Lerp(15f, 0f, t), nearFoot, WakeStepAcrossRod(parkedFarFoot, liveFarFoot, step, 0.075f, farSoleDepth),
+                Quaternion.identity, Quaternion.Slerp(plantedRotation, Quaternion.identity, step), 1f);
         });
+
+        if (wakeRodNormal != Vector3.zero && player.IsGrounded)
+        {
+            nearFootContact.Plant(this, nearBoot.position, Quaternion.identity);
+            farFootContact.Plant(this, farBoot.position, Quaternion.identity);
+            hasFootContacts = true;
+        }
 
         WakingUp = false;
         EndAction();
@@ -131,8 +156,11 @@ public sealed partial class CellMotion
     }
 
     private void PoseWakeWorld(Vector3 pelvis, Quaternion rotation, float pitch, float arm,
-        Vector3 nearTarget, Vector3 farTarget, Quaternion nearRotation, Quaternion farRotation)
+        Vector3 nearTarget, Vector3 farTarget, Quaternion nearRotation, Quaternion farRotation, float plantedWeight = 0f)
     {
+        if (wakeRodNormal != Vector3.zero && plantedWeight > 0f)
+            pelvis.y -= plantedWeight * Mathf.Max(WakePlantHipDrop(frontLeg, pelvis, rotation, nearTarget),
+                WakePlantHipDrop(backLeg, pelvis, rotation, farTarget));
         PlaceWakeHips(pelvis, rotation, Vector3.zero, pitch, arm);
         PoseWakeLegs(Vector3.zero, figure.InverseTransformPoint(nearTarget), figure.InverseTransformPoint(farTarget));
         nearBoot.rotation = nearRotation;
@@ -158,6 +186,89 @@ public sealed partial class CellMotion
     {
         frontLeg.Pose(0f, 0f, hipOffset, 0f, nearTarget - wakeNearHome, 1f);
         backLeg.Pose(0f, 0f, hipOffset, 0f, farTarget - wakeFarHome, 1f);
+    }
+
+    private void CacheWakeRod()
+    {
+        if (wakeRod == null)
+            return;
+
+        Renderer shaft = null;
+        foreach (Renderer part in wakeRod.GetComponentsInChildren<Renderer>())
+            if (part.enabled && (shaft == null || part.bounds.size.sqrMagnitude > shaft.bounds.size.sqrMagnitude))
+                shaft = part;
+        if (shaft == null)
+            return;
+
+        wakeRodAxis = Vector3.ProjectOnPlane(wakeRod.right, Vector3.up).normalized;
+        wakeRodNormal = Vector3.Cross(wakeRodAxis, Vector3.up);
+        wakeRodCenter = shaft.bounds.center;
+        wakeRodHalfWidth = WakeExtent(shaft, wakeRodNormal);
+        wakeRodHalfLength = WakeExtent(shaft, wakeRodAxis);
+        wakeRodTop = shaft.bounds.max.y;
+    }
+
+    private static float WakeExtent(Renderer part, Vector3 axis)
+    {
+        Vector3 localAxis = part.localToWorldMatrix.transpose.MultiplyVector(axis);
+        var absolute = new Vector3(Mathf.Abs(localAxis.x), Mathf.Abs(localAxis.y), Mathf.Abs(localAxis.z));
+        return Vector3.Dot(part.localBounds.extents, absolute);
+    }
+
+    private Vector3 WakePlant(Vector3 desired, Transform shoe, FootContact contact)
+    {
+        if (wakeRodNormal == Vector3.zero)
+            return desired;
+
+        float radius = 0f;
+        foreach (Renderer part in shoe.GetComponentsInChildren<Renderer>())
+        {
+            if (!part.enabled)
+                continue;
+            Vector3 edge = part.bounds.extents;
+            Vector3 center = part.bounds.center - shoe.position;
+            radius = Mathf.Max(radius, new Vector2(Mathf.Abs(center.x) + edge.x, Mathf.Abs(center.z) + edge.z).magnitude);
+        }
+
+        Vector3 offset = desired - wakeRodCenter;
+        float across = Vector3.Dot(offset, wakeRodNormal);
+        float margin = wakeRodHalfWidth + radius + wakeRodClearance;
+        // The shoelaces can rotate during the step. Use the boot's full horizontal envelope.
+        if (Mathf.Abs(Vector3.Dot(offset, wakeRodAxis)) <= wakeRodHalfLength + radius && Mathf.Abs(across) < margin)
+            desired += wakeRodNormal * (Mathf.Sign(across) * margin - across);
+
+        contact.FindSupport(this, desired, out Vector3 landed, out _);
+        return landed;
+    }
+
+    private Vector3 WakeStepAcrossRod(Vector3 from, Vector3 to, float t, float lift, float soleDepth)
+    {
+        float startSide = Vector3.Dot(from - wakeRodCenter, wakeRodNormal);
+        float endSide = Vector3.Dot(to - wakeRodCenter, wakeRodNormal);
+        if (startSide * endSide >= 0f)
+            return WakeFootArc(from, to, t, lift);
+
+        float clearance = wakeRodTop + soleDepth + wakeRodClearance;
+        Vector3 raisedFrom = new Vector3(from.x, Mathf.Max(from.y, clearance), from.z);
+        Vector3 raisedTo = new Vector3(to.x, Mathf.Max(to.y, clearance), to.z);
+        // Clear the shaft before crossing it, then lower the boot once the sole is past it.
+        const float liftedAt = 0.24f;
+        const float overAt = 0.72f;
+        if (t < liftedAt)
+            return Vector3.Lerp(from, raisedFrom, Mathf.SmoothStep(0f, 1f, t / liftedAt));
+        if (t > overAt)
+            return Vector3.Lerp(raisedTo, to, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(overAt, 1f, t)));
+        return Vector3.Lerp(raisedFrom, raisedTo, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(liftedAt, overAt, t)));
+    }
+
+    private float WakePlantHipDrop(LegPose leg, Vector3 pelvis, Quaternion rotation, Vector3 foot)
+    {
+        Vector3 hip = pelvis + rotation * (leg.Hip - wakeHips);
+        Vector3 ankle = foot + rotation * leg.AnkleOffset;
+        Vector3 delta = hip - ankle;
+        float reach = leg.MaximumReach - 0.005f;
+        float verticalReach = Mathf.Sqrt(Mathf.Max(0.02f, reach * reach - delta.x * delta.x - delta.z * delta.z));
+        return Mathf.Max(0f, delta.y - verticalReach);
     }
 
     private static Vector3 ClearWakeBed(Vector3 from, Vector3 to, Bounds mattress, float t)

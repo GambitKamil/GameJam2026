@@ -6,6 +6,7 @@ public sealed partial class CellMotion
     [SerializeField, Range(0.1f, 0.4f)] private float maximumStrideLead = 0.27f;
     [SerializeField, Range(0.02f, 0.2f)] private float swingClearance = 0.11f;
     [SerializeField, Range(0.06f, 0.24f)] private float turnTime = 0.14f;
+    [SerializeField, Min(0f)] private float gateBootClearance = 0.008f;
 
     private FootContact nearFootContact;
     private FootContact farFootContact;
@@ -174,6 +175,31 @@ public sealed partial class CellMotion
         footsteps.PlayOneShot(boot, Mathf.Lerp(0.42f, 0.17f, crouchBlend));
     }
 
+    private Vector3 ConstrainBootLanding(Vector3 point, float bootRadius)
+    {
+        if (gateBlocker == null || !gateBlocker.enabled || !gateBlocker.gameObject.activeInHierarchy)
+            return point;
+
+        Transform leaf = gateBlocker.transform;
+        Vector3 center = gateBlocker.center;
+        Vector3 halfSize = gateBlocker.size * 0.5f;
+        Vector3 localPoint = leaf.InverseTransformPoint(point) - center;
+        Vector3 scale = leaf.lossyScale;
+        float padding = bootRadius + gateBootClearance;
+        if (Mathf.Abs(localPoint.z) > halfSize.z + padding / Mathf.Abs(scale.z))
+            return point;
+
+        // Reserve room for the whole boot as its yaw blends through the swing.
+        float actorX = leaf.InverseTransformPoint(transform.position).x;
+        float side = actorX < center.x ? -1f : 1f;
+        float limit = halfSize.x + padding / Mathf.Abs(scale.x);
+        if (localPoint.x * side >= limit)
+            return point;
+
+        localPoint.x = limit * side;
+        return leaf.TransformPoint(localPoint + center);
+    }
+
     private void FitPlantedFoot(FootContact foot, ref Vector3 hipOffset)
     {
         if (!foot.Planted)
@@ -191,6 +217,7 @@ public sealed partial class CellMotion
     {
         private readonly Transform bootTransform;
         private readonly float soleOffset;
+        private readonly float bootRadius;
         private Quaternion rotation;
 
         public FootContact(LegPose leg, Transform shoe)
@@ -200,7 +227,14 @@ public sealed partial class CellMotion
             rotation = shoe.rotation;
             float bottom = shoe.position.y;
             foreach (Renderer renderer in shoe.GetComponentsInChildren<Renderer>())
-                bottom = Mathf.Min(bottom, renderer.bounds.min.y);
+            {
+                Bounds bounds = renderer.bounds;
+                Vector3 offset = bounds.center - shoe.position;
+                float x = Mathf.Abs(offset.x) + bounds.extents.x;
+                float z = Mathf.Abs(offset.z) + bounds.extents.z;
+                bootRadius = Mathf.Max(bootRadius, Mathf.Sqrt(x * x + z * z));
+                bottom = Mathf.Min(bottom, bounds.min.y);
+            }
             soleOffset = shoe.position.y - bottom;
         }
 
@@ -228,6 +262,7 @@ public sealed partial class CellMotion
 
         public void FindSupport(CellMotion motion, Vector3 point, out Vector3 target, out RaycastHit hit)
         {
+            point = motion.ConstrainBootLanding(point, bootRadius);
             Vector3 sole = point - Vector3.up * soleOffset;
             // Foot probes span the boot silhouette offset and small floor height changes.
             bool found = motion.player.TryGetSupport(sole, 0.14f, 0.20f, out hit);
