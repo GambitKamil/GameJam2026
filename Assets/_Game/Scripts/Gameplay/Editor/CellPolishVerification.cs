@@ -162,6 +162,7 @@ internal static partial class CellPolishVerification
         foreach (Transform bone in rat.bones)
             Record($"Rat bone {bone.name}: {rat.transform.InverseTransformPoint(bone.position):F3}");
         InitializeMetrics();
+        InitializeComposition();
         InitializeGrateProbe();
         keyRenderers = key.GetComponentsInChildren<Renderer>();
         if (!Physics.Raycast(key.position, Vector3.down, out RaycastHit keyFloor, 5f, ~0, QueryTriggerInteraction.Ignore))
@@ -178,6 +179,7 @@ internal static partial class CellPolishVerification
         if (sleeve != null)
         {
             SampleMotion();
+            SampleComposition();
             SampleGrateInteraction();
             if (key.gameObject.activeInHierarchy)
                 SampleKeyClearance();
@@ -271,6 +273,8 @@ internal static partial class CellPolishVerification
                 break;
             case 7:
                 if (Stage() != "GateOpen" || motion.Busy)
+                    return;
+                if (!CaptureGateReveal())
                     return;
                 if (!WalkTo(exit.position.x - 0.70f))
                     return;
@@ -370,25 +374,27 @@ internal static partial class CellPolishVerification
     private static object Call(object target, string name, params object[] args) =>
         target.GetType().GetMethod(name, Instance | BindingFlags.Static).Invoke(target, args);
 
-    private static void Capture(string name)
+    private static void Capture(string name, Camera source = null)
     {
         if (Application.isBatchMode)
             return;
+        skippedCapture = true;
+        source = source == null ? view : source;
         var previous = RenderTexture.active;
-        var target = view.targetTexture;
+        var target = source.targetTexture;
         var image = new Texture2D(960, 540, TextureFormat.RGB24, false);
         var capture = RenderTexture.GetTemporary(960, 540, 24);
         try
         {
-            view.targetTexture = capture;
-            view.Render();
+            source.targetTexture = capture;
+            source.Render();
             RenderTexture.active = capture;
             image.ReadPixels(new Rect(0, 0, 960, 540), 0, 0);
             File.WriteAllBytes(Path.Combine(output, name + ".png"), image.EncodeToPNG());
         }
         finally
         {
-            view.targetTexture = target;
+            source.targetTexture = target;
             RenderTexture.active = previous;
             RenderTexture.ReleaseTemporary(capture);
             Object.Destroy(image);
@@ -414,6 +420,7 @@ internal static partial class CellPolishVerification
         if (active)
         {
             ReportGrateProbe();
+            ReportComposition();
             Metric(keyDropClearance >= -0.004f && keyFloorClearance >= -0.004f && keyFloorClearance <= 0.012f,
                 $"Key floor clearance: drop={keyDropClearance:F4} m, settled and dragged={keyFloorClearance:F4} m, lowest pivot={keyLowestPose:F3}");
             ReportMotionMetrics();

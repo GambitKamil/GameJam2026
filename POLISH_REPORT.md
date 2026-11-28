@@ -58,3 +58,11 @@ After the mouse hit the key, the old drop fixed the pivot at Y=0.105 m and kept 
 ## Suggestions (not implemented)
 
 - Any requirement for continuous physical contact with the far hook point or an out-of-reach door handle calls for a joint layout review with Ali, with the lane, handle and shaft positions evaluated together.
+
+## Phase 2 baseline
+
+Phase 2 starts at `fcfc217` on `gameplay/cell-composition-polish`. The Unity 6000.3.29f1 Built-in scene and original art match Ali's `8912fb2`, integrated as `7a0e5c4`. The camera is the existing orthographic `SideViewCamera`; the gate becomes open at the end of `CellEscape.Open`. `CellMotion.Wake.cs` owns the bed step. The rod is the scene's original `CellEscape.rod` transform.
+
+The Windows baseline built and the scripted route reached the exit and restarted. The first capture set is in `D:/GameJam2026/CellMotionEvidence/Phase2Before`. SHOT 1 has the bed and rod in frame, with bars at the far edge. SHOT 2 has little space beyond the bars. The side and top captures show the boot crossing the rod at 2.400 s, with 119.50 mm of oriented bounding overlap. The rod's wake translation was 0 m. Initial frame wall time averaged 11.591 ms (86.27 FPS) in Editor Play Mode, excluding direct readback frames. The comparable uncapped pass repeats the same route with corrected closed-gate sampling.
+
+Corrected uncapped baseline `Phase2Baseline` passed the full route. At 16:9 the closed and open gameplay plane bounds both read −3.7466 to 3.3107 m (0.00% revealed). Mean Editor frame wall time was 12.644 ms / 79.09 FPS across 1,172 frames after excluding synchronous capture work. The two-view boot proxy repeated at 119.50 mm and rod translation stayed at zero. The Windows baseline is in `Phase2Before`. The connected Unity MCP endpoint did not respond in this session, so capture and scene authoring use the local Unity Editor and existing C# harness. The project contains no dedicated camera, motion or rigging plugin in its package manifest.
