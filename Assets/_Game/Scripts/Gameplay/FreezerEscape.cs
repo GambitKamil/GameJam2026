@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 [DefaultExecutionOrder(150)]
-public sealed class FreezerEscape : MonoBehaviour
+public sealed partial class FreezerEscape : MonoBehaviour
 {
-    private enum Phase { Kitchen, Trapped, DoorOpen, Frozen, Laundry, Escaped }
+    private enum Phase { Kitchen, Trapped, Blackout, Frozen, Caught, Laundry, Escaped }
 
     [SerializeField] private SideViewPlayer player;
     [SerializeField] private KitchenPassageDoor entranceDoor;
@@ -57,7 +57,7 @@ public sealed class FreezerEscape : MonoBehaviour
     private bool resetting;
     private bool arriving;
 
-    private bool ColdActive => phase is Phase.Trapped or Phase.DoorOpen;
+    private bool ColdActive => phase == Phase.Trapped;
     private float SoleOffset => capsule.center.y - capsule.height * 0.5f;
     private float Feet => body.position.y + SoleOffset;
     private float Doorway => freezerDoor.position.x;
@@ -121,8 +121,15 @@ public sealed class FreezerEscape : MonoBehaviour
                 if (heldCrate == null && Input.GetKeyDown(KeyCode.Space))
                     TryClimb();
             }
+            else if (phase == Phase.Blackout && climb == null && Input.GetKeyDown(KeyCode.E))
+            {
+                TryLiftLaundryShutter();
+            }
+            if (phase == Phase.Blackout && climb == null && heldCrate == null && Input.GetKeyDown(KeyCode.Space))
+                TryClimb();
         }
 
+        UpdateBlackout(Time.deltaTime);
         UpdatePresentation();
     }
 
@@ -135,10 +142,10 @@ public sealed class FreezerEscape : MonoBehaviour
             Show("Door locked   /   Find the emergency release", 2.5f);
         }
 
-        if (phase == Phase.DoorOpen && body.position.x >= laundryDoor.position.x + 0.65f)
+        if (phase == Phase.Blackout && laundryOpen && body.position.x >= laundryDoor.position.x + 0.65f)
         {
-            SetDoorHeight(laundryDoor, closedLaundryHeight + doorTravel);
             phase = Phase.Laundry;
+            SlamLaundryShutter();
         }
 
         if (phase == Phase.Laundry && body.position.x >= levelExit.position.x)
@@ -156,11 +163,6 @@ public sealed class FreezerEscape : MonoBehaviour
         remaining = Mathf.Max(0f, remaining - delta);
         cold = 1f - remaining / secondsBeforeFreezing;
         SetDoorHeight(freezerDoor, Mathf.MoveTowards(freezerDoor.position.y, closedDoorHeight, delta * 3.5f));
-        if (phase == Phase.DoorOpen)
-        {
-            float target = closedLaundryHeight + doorTravel;
-            SetDoorHeight(laundryDoor, Mathf.MoveTowards(laundryDoor.position.y, target, delta * 3.5f));
-        }
         if (remaining > 0f)
             return;
 
@@ -212,7 +214,11 @@ public sealed class FreezerEscape : MonoBehaviour
             motion.SetHandTarget(new Vector3(handX, box.max.y - 0.08f, body.position.z - 0.14f), 0.92f);
         }
 
-        if (cookArm != null)
+        if (powerOut)
+        {
+            PoseCook();
+        }
+        else if (cookArm != null)
         {
             float beat = Time.time * 2.2f;
             cookArm.localRotation = Quaternion.Euler(7f * Mathf.Sin(beat), 9f * Mathf.Cos(beat), 13f * Mathf.Sin(beat * 1.6f));
@@ -409,8 +415,9 @@ public sealed class FreezerEscape : MonoBehaviour
         leverHandle.localRotation = pulled;
         leverLight.color = new Color(1f, 0.74f, 0.43f);
         leverLight.intensity *= 0.55f;
-        phase = Phase.DoorOpen;
-        Show("Laundry door open", 2.2f);
+        phase = Phase.Blackout;
+        BeginBlackout();
+        Show("Power cut   /   Laundry lock released", 2.4f);
         motion.EndAction();
         Physics.SyncTransforms();
         player.SetDoorwayWalk(false);
@@ -448,14 +455,16 @@ public sealed class FreezerEscape : MonoBehaviour
     {
         if (phase == Phase.Frozen)
             return "Too cold   /   R  Retry";
+        if (phase == Phase.Caught)
+            return GameManager.Instance == null ? "Caught by the cook   /   R  Retry" : "Caught by the cook";
+        if (phase == Phase.Blackout)
+            return BlackoutHint();
         if (phase == Phase.Escaped)
             return GameManager.Instance == null ? "R  Replay" : string.Empty;
         if (phase is Phase.Kitchen or Phase.Laundry)
             return string.Empty;
         if (Time.time < feedbackUntil)
             return feedback;
-        if (phase == Phase.DoorOpen)
-            return string.Empty;
         if (climb != null || leverPull != null)
             return string.Empty;
         if (heldCrate != null)
@@ -503,8 +512,13 @@ public sealed class FreezerEscape : MonoBehaviour
         mechanismSound.volume = 0.6f * volume;
         float freezerMix = phase == Phase.Frozen || ColdActive ? 1f : 0f;
         float laundryMix = phase is Phase.Laundry or Phase.Escaped ? 1f : 0f;
-        freezerSound.volume = Mathf.MoveTowards(freezerSound.volume, freezerMix * 0.29f * volume, Time.unscaledDeltaTime * 0.65f);
-        kitchenSound.volume = Mathf.MoveTowards(kitchenSound.volume, (1f - freezerMix) * (1f - laundryMix) * 0.3f * volume, Time.unscaledDeltaTime * 0.85f);
+        // Without power the compressors spin down and the kitchen falls silent.
+        float powerMix = powerOut ? 0f : 1f;
+        if (powerOut)
+            freezerSound.pitch = Mathf.MoveTowards(freezerSound.pitch, 0.32f, Time.unscaledDeltaTime * 0.8f);
+        float fade = powerOut ? 0.4f : 0.65f;
+        freezerSound.volume = Mathf.MoveTowards(freezerSound.volume, (powerOut ? 0f : freezerMix) * 0.29f * volume, Time.unscaledDeltaTime * fade);
+        kitchenSound.volume = Mathf.MoveTowards(kitchenSound.volume, powerMix * (1f - freezerMix) * (1f - laundryMix) * 0.3f * volume, Time.unscaledDeltaTime * 0.85f);
         laundrySound.volume = Mathf.MoveTowards(laundrySound.volume, laundryMix * 0.27f * volume, Time.unscaledDeltaTime * 0.58f);
         float slide = heldCrate != null && !body.isKinematic ? Mathf.Abs(body.linearVelocity.x) : 0f;
         crateSound.volume = Mathf.MoveTowards(crateSound.volume,
