@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 public sealed class CellAnimationLibrary : MonoBehaviour
 {
@@ -15,6 +17,10 @@ public sealed class CellAnimationLibrary : MonoBehaviour
     private Transform leftHand;
     private Transform leftShoulder;
     private float idleHeight;
+    private PlayableGraph graph;
+    private AnimationMixerPlayable mixer;
+    private AnimationClipPlayable[] samples;
+    private int activeClip = -1;
 
     public struct Pose
     {
@@ -40,14 +46,31 @@ public sealed class CellAnimationLibrary : MonoBehaviour
         rightFoot = System.Array.Find(bones, bone => bone.name == "foot_r");
         leftHand = System.Array.Find(bones, bone => bone.name == "hand_l");
         leftShoulder = System.Array.Find(bones, bone => bone.name == "upperarm_l");
-        clips[(int)Motion.Idle].SampleAnimation(rig, 0f);
+        var animator = rig.GetComponent<Animator>();
+        if (animator == null)
+            animator = rig.AddComponent<Animator>();
+        animator.applyRootMotion = false;
+        animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        graph = PlayableGraph.Create("Cell Quaternius poses");
+        graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+        mixer = AnimationMixerPlayable.Create(graph, clips.Length);
+        samples = new AnimationClipPlayable[clips.Length];
+        for (int i = 0; i < clips.Length; i++)
+        {
+            samples[i] = AnimationClipPlayable.Create(graph, clips[i]);
+            samples[i].SetSpeed(0);
+            graph.Connect(samples[i], 0, mixer, i);
+        }
+
+        AnimationPlayableOutput.Create(graph, "Cell animation rig", animator).SetSourcePlayable(mixer);
+        graph.Play();
+        EvaluateClip((int)Motion.Idle, 0f);
         idleHeight = Local(pelvis).y;
     }
 
     public Pose Sample(Motion motion, float normalizedTime)
     {
-        AnimationClip clip = clips[(int)motion];
-        clip.SampleAnimation(rig, Mathf.Clamp01(normalizedTime) * clip.length);
+        EvaluateClip((int)motion, normalizedTime);
         Vector3 chest = Local(head) - Local(pelvis);
         Vector3 arm = Local(leftHand) - Local(leftShoulder);
         return new Pose
@@ -58,6 +81,26 @@ public sealed class CellAnimationLibrary : MonoBehaviour
             TorsoPitch = Mathf.Atan2(chest.z, chest.y) * Mathf.Rad2Deg,
             ArmPitch = Mathf.Atan2(-arm.z, Mathf.Max(-arm.y, 0.04f)) * Mathf.Rad2Deg
         };
+    }
+
+    private void EvaluateClip(int index, float progress)
+    {
+        if (activeClip != index)
+        {
+            if (activeClip >= 0)
+                mixer.SetInputWeight(activeClip, 0f);
+            mixer.SetInputWeight(index, 1f);
+            activeClip = index;
+        }
+
+        samples[index].SetTime(Mathf.Clamp01(progress) * clips[index].length);
+        graph.Evaluate(0f);
+    }
+
+    private void OnDestroy()
+    {
+        if (graph.IsValid())
+            graph.Destroy();
     }
 
     private Vector3 Local(Transform bone) => rig.transform.InverseTransformPoint(bone.position);
