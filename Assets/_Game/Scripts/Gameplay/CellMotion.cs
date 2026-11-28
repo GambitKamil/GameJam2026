@@ -32,6 +32,9 @@ public sealed class CellMotion : MonoBehaviour
     private float chew;
     private int facing = 1;
     private bool striding;
+    private bool carryingRod;
+    public int Facing => facing;
+    public bool OccupiesHand => heldBread != null || Busy;
     public bool Busy { get; private set; }
 
     private void Awake()
@@ -61,6 +64,11 @@ public sealed class CellMotion : MonoBehaviour
     {
         if (Mathf.Abs(x) > 0.05f)
             facing = x < 0f ? -1 : 1;
+    }
+
+    public void SetCarryingRod(bool carrying)
+    {
+        carryingRod = carrying;
     }
 
     public Vector3 HandPosition => hand.position;
@@ -168,10 +176,11 @@ public sealed class CellMotion : MonoBehaviour
         figure.localScale = new Vector3(facing, 1f, 1f);
         float swing = Mathf.Sin(phase) * gait;
         figure.localPosition = rest + Vector3.up * (Mathf.Abs(swing) * 0.055f - bend * 0.008f);
-        figure.localRotation = Quaternion.Euler(0f, 0f, -bend * facing);
+        figure.localRotation = Quaternion.Euler(0f, 0f, -bend * facing - 5f * gait * facing);
         frontHip.localRotation = Quaternion.Euler(0f, 0f, 34f * swing);
         backHip.localRotation = Quaternion.Euler(0f, 0f, -34f * swing);
-        shoulder.localRotation = Quaternion.Euler(0f, 0f, Busy ? armAngle : heldBread != null ? 67f : -26f * swing);
+        float restingArm = carryingRod ? 42f - 7f * swing : -26f * swing;
+        shoulder.localRotation = Quaternion.Euler(0f, 0f, Busy ? armAngle : heldBread != null ? 67f : restingArm);
         neck.localRotation = Quaternion.Euler(0f, 0f, chew);
         if (heldBread != null)
             heldBread.transform.position = hand.position + new Vector3(facing * 0.045f, 0f, -0.05f);

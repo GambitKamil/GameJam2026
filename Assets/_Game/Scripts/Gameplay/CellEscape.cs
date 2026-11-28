@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+[DefaultExecutionOrder(100)]
 public sealed class CellEscape : MonoBehaviour
 {
     [SerializeField] private SideViewPlayer player;
@@ -33,6 +34,13 @@ public sealed class CellEscape : MonoBehaviour
     private Vector3 catchDestination;
     private float catchTime;
     private float catchJumpTime;
+    private bool mouseReacting;
+    private Vector3 wanderStart;
+    private Vector3 wanderTarget;
+    private float wanderTime;
+    private float wanderDuration;
+    private float nextWander;
+    private bool rodInUse;
 
     private void Awake()
     {
@@ -43,6 +51,7 @@ public sealed class CellEscape : MonoBehaviour
         mouseTail = mouse.Find("Mouse Tail");
         mouseHeadRest = mouseHead.localRotation;
         mouseTailRest = mouseTail.localRotation;
+        nextWander = Time.time + Random.Range(0.45f, 1.2f);
         clang = MakeSound("Key clang", 0.38f, 840f, 1417f);
         step = MakeSound("Guard boot", 0.18f, 62f, 109f);
     }
@@ -99,6 +108,8 @@ public sealed class CellEscape : MonoBehaviour
             if (stage != Stage.FindBread)
                 yield break;
 
+            mouseReacting = true;
+            wanderDuration = 0f;
             Vector3 food = crumb.position;
             Vector3 stop = new Vector3(food.x + Mathf.Sign(mouse.position.x - food.x) * 0.17f, 0f, food.z);
             yield return RunMouse(stop, RunDuration(stop));
@@ -110,7 +121,10 @@ public sealed class CellEscape : MonoBehaviour
 
             mouseHead.localRotation = mouseHeadRest;
             Destroy(crumb.gameObject);
-            yield return RunMouse(mouseHome, RunDuration(mouseHome));
+            Vector3 retreat = new Vector3(Mathf.Clamp(food.x + 0.75f, gate.position.x + 0.9f, exit.position.x - 0.9f), 0f, mouseHome.z);
+            yield return RunMouse(retreat, RunDuration(retreat));
+            nextWander = Time.time + Random.Range(0.5f, 1.45f);
+            mouseReacting = false;
             yield break;
         }
 
@@ -235,6 +249,8 @@ public sealed class CellEscape : MonoBehaviour
 
     private void Update()
     {
+        if (stage == Stage.FindBread && !mouseReacting)
+            Wander();
         if (!SideViewPlayer.CanReadInput)
             return;
 
@@ -254,6 +270,53 @@ public sealed class CellEscape : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.E))
             Interact();
+    }
+
+    private void Wander()
+    {
+        if (wanderDuration > 0f)
+        {
+            wanderTime += Time.deltaTime;
+            if (wanderTime < wanderDuration)
+            {
+                SetMouseStride(wanderStart, wanderTarget, wanderTime, wanderDuration);
+                return;
+            }
+
+            mouse.position = wanderTarget;
+            mouse.rotation = Quaternion.identity;
+            wanderDuration = 0f;
+            nextWander = Time.time + Random.Range(0.65f, 2.1f);
+        }
+
+        mouseHead.localRotation = mouseHeadRest * Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 7f) * 4.5f);
+        mouseTail.localRotation = mouseTailRest * Quaternion.Euler(0f, Mathf.Sin(Time.time * 3.1f) * 9f, 0f);
+        if (Time.time < nextWander)
+            return;
+
+        wanderStart = mouse.position;
+        float x = Mathf.Clamp(wanderStart.x + Random.Range(-2.2f, 1.85f), gate.position.x + 0.95f, exit.position.x - 0.55f);
+        wanderTarget = new Vector3(x, 0f, Random.Range(0.45f, 0.86f));
+        wanderDuration = Mathf.Max(0.24f, Vector3.Distance(wanderStart, wanderTarget) / Random.Range(0.85f, 1.55f));
+        wanderTime = 0f;
+        FaceMouse(wanderTarget.x - wanderStart.x);
+    }
+
+    private void LateUpdate()
+    {
+        if (haveRod && !rodInUse)
+            CarryRod();
+    }
+
+    private void CarryRod()
+    {
+        float side = motion.Facing;
+        Vector3 grip = motion.HandPosition;
+        if (motion.OccupiesHand)
+            grip = player.transform.position + new Vector3(-side * 0.20f, -0.03f, 0.24f);
+        float tilt = motion.OccupiesHand ? 108f : 82f;
+        rod.rotation = Quaternion.Euler(0f, 0f, side > 0f ? tilt : 180f - tilt);
+        rod.position = grip - rod.TransformVector(new Vector3(-0.27f, 0f, 0f));
     }
 
     private void Interact()
@@ -282,6 +345,7 @@ public sealed class CellEscape : MonoBehaviour
     private IEnumerator PickUpRod()
     {
         moving = true;
+        rodInUse = true;
         motion.Face(rod.position.x - player.transform.position.x);
         yield return motion.Reach(-28f, 36f, 0.25f);
         yield return Move(rod, motion.HandPosition, 0.30f, 0.09f);
@@ -293,8 +357,9 @@ public sealed class CellEscape : MonoBehaviour
             rod.rotation = Quaternion.Slerp(floorRotation, Quaternion.Euler(0f, 0f, 52f), elapsed / 0.28f);
             yield return null;
         }
-        rod.gameObject.SetActive(false);
         haveRod = true;
+        rodInUse = false;
+        motion.SetCarryingRod(true);
         motion.EndAction();
         moving = false;
     }
@@ -314,14 +379,14 @@ public sealed class CellEscape : MonoBehaviour
     private IEnumerator PullKey()
     {
         moving = true;
+        rodInUse = true;
         motion.Face(1f);
         yield return motion.Reach(35f, 25f, 0.23f);
         Vector3 grip = motion.HandPosition;
         Vector3 keyOnFloor = key.position;
         Vector3 direction = (keyOnFloor - grip).normalized;
         Vector3 stowed = grip + direction * 0.44f;
-        PlaceHook(stowed, direction);
-        rod.gameObject.SetActive(true);
+        yield return TurnRodToward(stowed, direction);
         yield return SlideHook(stowed, keyOnFloor + Vector3.up * 0.17f, direction, 0.40f);
         yield return SlideHook(keyOnFloor + Vector3.up * 0.17f, keyOnFloor, direction, 0.19f);
         Vector3 retrieved = new Vector3(gate.position.x - 0.65f, keyOnFloor.y, 0.20f);
@@ -334,10 +399,43 @@ public sealed class CellEscape : MonoBehaviour
         }
 
         key.position = retrieved;
-        rod.gameObject.SetActive(false);
+        yield return ReturnRodToHand();
+        rodInUse = false;
         stage = Stage.KeyWithinReach;
         motion.EndAction();
         moving = false;
+    }
+
+    private IEnumerator TurnRodToward(Vector3 tip, Vector3 direction)
+    {
+        Vector3 start = rod.position;
+        Quaternion startRotation = rod.rotation;
+        PlaceHook(tip, direction);
+        Vector3 target = rod.position;
+        Quaternion targetRotation = rod.rotation;
+        yield return BlendRod(start, startRotation, target, targetRotation, 0.27f);
+    }
+
+    private IEnumerator ReturnRodToHand()
+    {
+        Vector3 start = rod.position;
+        Quaternion startRotation = rod.rotation;
+        CarryRod();
+        Vector3 target = rod.position;
+        Quaternion targetRotation = rod.rotation;
+        yield return BlendRod(start, startRotation, target, targetRotation, 0.28f);
+    }
+
+    private IEnumerator BlendRod(Vector3 start, Quaternion from, Vector3 end, Quaternion to, float duration)
+    {
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            rod.SetPositionAndRotation(Vector3.Lerp(start, end, t), Quaternion.Slerp(from, to, t));
+            yield return null;
+        }
+
+        rod.SetPositionAndRotation(end, to);
     }
 
     private IEnumerator SlideHook(Vector3 start, Vector3 finish, Vector3 direction, float duration)
