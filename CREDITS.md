@@ -18,6 +18,7 @@
 - Universal Animation Library (Standard) - Quaternius - https://quaternius.itch.io/universal-animation-library - CC0 1.0 - `Assets/_Game/Prefabs/Gameplay/CellAnimation/`
 
 - Cell prototype logic, layout, and English prompts — Codex (OpenAI) — https://openai.com/codex/ — AI-assisted, created for this project — `Assets/_Game/Scripts/Gameplay/`, `Assets/_Game/Scenes/Levels/Cell.unity`
+- Prisoner character model, rig, textures and animations — made in Blender with AI assistance (Claude, Anthropic) — https://claude.com/claude-code — created for this project — `Assets/_Game/Art/Characters/Prisoner/`, `Assets/_Game/Animations/Prisoner/`
 
 
 ## Systems, audio & build
